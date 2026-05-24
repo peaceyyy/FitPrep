@@ -1,0 +1,56 @@
+export const mockPublishedPlans = [
+  {
+    id: 'plan-1',
+    week_start_date: '2026-05-26',
+    name: 'Cutting Week 1',
+    category: 'Cutting',
+    description: 'Lean protein, low carb weekly meal plan for weight loss',
+    weekly_price: 79.99,
+    is_published: true,
+  },
+  {
+    id: 'plan-2',
+    week_start_date: '2026-05-26',
+    name: 'Bulking Week 1',
+    category: 'Bulking',
+    description: 'High protein and complex carbs for growth',
+    weekly_price: 84.99,
+    is_published: true,
+  },
+];
+
+export const mockPlanMeals = [
+  {
+    id: 'meal-1',
+    plan_id: 'plan-1',
+    day_of_week: 'Monday',
+    meal_name: 'Grilled Chicken Salad',
+    description: 'Grilled chicken breast with mixed greens',
+    calories: 350,
+    protein_g: 45,
+    carbs_g: 20,
+    fats_g: 8,
+  },
+  {
+    id: 'meal-2',
+    plan_id: 'plan-1',
+    day_of_week: 'Tuesday',
+    meal_name: 'Salmon & Broccoli',
+    description: 'Pan-seared salmon with steamed broccoli',
+    calories: 420,
+    protein_g: 50,
+    carbs_g: 15,
+    fats_g: 12,
+  },
+  {
+    id: 'meal-3',
+    plan_id: 'plan-2',
+    day_of_week: 'Monday',
+    meal_name: 'Beef Bowl',
+    description: 'Lean beef with rice and mixed vegetables',
+    calories: 520,
+    protein_g: 48,
+    carbs_g: 55,
+    fats_g: 12,
+  },
+];
