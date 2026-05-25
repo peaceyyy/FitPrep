@@ -30,7 +30,7 @@ export default function AdminOverviewScreen({ onCreateMeal }) {
 
       <View style={styles.revenueCard}>
         <AppText style={styles.statLabel}>Total Revenue</AppText>
-        <AppText style={styles.revenueValue}>$24,510</AppText>
+        <AppText style={styles.revenueValue}>₱124,510</AppText>
         <View style={styles.graphPlaceholder}><AppText style={styles.graphText}>[Revenue graph]</AppText></View>
       </View>
 

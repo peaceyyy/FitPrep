@@ -5,8 +5,8 @@ import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 
 const sampleMeals = [
-  { id: 'm1', title: 'Lemon Herb Roasted Chicken', description: 'High-protein cutting meal with zesty vegetables.', price: '$12.99' },
-  { id: 'm2', title: 'Salmon & Asparagus', description: 'Lean and nutritious plan for recovery days.', price: '$14.50' },
+  { id: 'm1', title: 'Lemon Herb Roasted Chicken', description: 'High-protein cutting meal with zesty vegetables.', price: '₱199.00' },
+  { id: 'm2', title: 'Salmon & Asparagus', description: 'Lean and nutritious plan for recovery days.', price: '₱250.00' },
 ];
 
 export default function AdminMealCategoryScreen({ category, meals = sampleMeals, onBack, onAdd }) {

@@ -1,12 +1,13 @@
 import AppText from '../components/AppText';
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View, Pressable, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { ScrollView, StyleSheet, View, Pressable, Alert, ActivityIndicator, Text } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
-import { placeOrder } from '../services/ordersService';
+import { MOCK_PAYMENT_METHOD, normalizeDeliveryTime, placeOrder } from '../services/ordersService';
 import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
 import { usePlans } from '../context/PlansContext';
 import { getPreorderEligibility } from '../services/plansService';
+import { Ionicons } from '@expo/vector-icons';
 
 const timeOptions = [
   { label: '6:00 AM', subtitle: 'Early Morning' },
@@ -15,26 +16,57 @@ const timeOptions = [
 
 export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
   const [selectedTime, setSelectedTime] = useState('6:00 AM');
-  const [paymentType, setPaymentType] = useState('online');
   const [loading, setLoading] = useState(false);
   const [proofAttached, setProofAttached] = useState(false);
+  
   const {
     browsingWeekStartDate,
     currentWeekStartDate,
     loadOrders,
     subscriptionForWeek,
+    selectedPlanMeals,
   } = usePlans();
+
   const preorderEligibility = getPreorderEligibility({
     browsingWeekStartDate,
     currentWeekStartDate,
     selectedPlan: plan,
     subscriptionForWeek,
   });
+
   const canConfirm = preorderEligibility.canPreorder && !loading;
+
+  // Group meals by day of week and sort by meal type
+  const mealsByDay = useMemo(() => {
+    const grouped = {};
+    const DAYS_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    DAYS_ORDER.forEach(day => {
+      grouped[day] = { Breakfast: null, Lunch: null, Dinner: null };
+    });
+
+    if (Array.isArray(selectedPlanMeals)) {
+      selectedPlanMeals.forEach(meal => {
+        const day = meal.day_of_week;
+        const type = meal.meal_type || 'Lunch';
+        if (grouped[day]) {
+          grouped[day][type] = meal;
+        }
+      });
+    }
+
+    return grouped;
+  }, [selectedPlanMeals]);
 
   const handleConfirm = async () => {
     if (!preorderEligibility.canPreorder) {
       Alert.alert('Preorder Locked', preorderEligibility.reason);
+      return;
+    }
+
+    const deliveryTime = normalizeDeliveryTime(selectedTime);
+    if (!deliveryTime) {
+      Alert.alert('Delivery Time Required', 'Choose either 6:00 AM or 10:00 AM before placing your preorder.');
       return;
     }
 
@@ -50,7 +82,7 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
         Alert.alert('Error', 'Could not place order. Please try again.');
         return;
       }
-      const { error } = await placeOrder(userId, plan.id);
+      const { error } = await placeOrder(userId, plan, { deliveryTime });
       if (error) {
         Alert.alert('Order Failed', error.message);
         return;
@@ -70,21 +102,53 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
       <View style={styles.summaryCard}>
         <View style={styles.summaryHeader}>
           <View style={styles.planBadge}><AppText style={styles.planBadgeText}>Plan Selected</AppText></View>
-          <AppText style={styles.summaryMeals}>14 Total Meals</AppText>
+          <AppText style={styles.summaryMeals}>{selectedPlanMeals?.length || 21} Total Meals</AppText>
         </View>
         <AppText style={styles.summaryTitle}>{plan?.name || 'Selected Plan'}</AppText>
-        <View style={styles.recipeRow}>
-          <View style={styles.recipeImage} />
-          <View style={styles.recipeItems}>
-            <AppText style={styles.recipeText}>6x Lemon Herb Roasted Chicken</AppText>
-            <AppText style={styles.recipeText}>4x Wild Caught Salmon & Asparagus</AppText>
-            <AppText style={styles.recipeText}>4x Lean Beef & Sweet Potato Mash</AppText>
-          </View>
+        
+        {/* Full Mon-Sun B/L/D Schedule */}
+        <View style={styles.scheduleContainer}>
+          <AppText style={styles.scheduleTitle}>Weekly Meal Schedule</AppText>
+          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+            const dayMeals = mealsByDay[day] || { Breakfast: null, Lunch: null, Dinner: null };
+            return (
+              <View key={day} style={styles.dayCard}>
+                <View style={styles.dayHeader}>
+                  <AppText style={styles.dayName}>{day}</AppText>
+                </View>
+                <View style={styles.mealsGrid}>
+                  <View style={styles.mealRow}>
+                    <Ionicons name="sunny-outline" size={14} color="#d4a373" style={styles.mealIcon} />
+                    <View style={styles.mealTextContainer}>
+                      <AppText style={styles.mealTypeLabel}>Breakfast: </AppText>
+                      <AppText style={styles.mealNameText}>{dayMeals.Breakfast?.meal_name || 'No breakfast scheduled'}</AppText>
+                    </View>
+                  </View>
+                  <View style={styles.mealRow}>
+                    <Ionicons name="sunny" size={14} color="#e76f51" style={styles.mealIcon} />
+                    <View style={styles.mealTextContainer}>
+                      <AppText style={styles.mealTypeLabel}>Lunch: </AppText>
+                      <AppText style={styles.mealNameText}>{dayMeals.Lunch?.meal_name || 'No lunch scheduled'}</AppText>
+                    </View>
+                  </View>
+                  <View style={styles.mealRow}>
+                    <Ionicons name="moon-outline" size={14} color="#264653" style={styles.mealIcon} />
+                    <View style={styles.mealTextContainer}>
+                      <AppText style={styles.mealTypeLabel}>Dinner: </AppText>
+                      <AppText style={styles.mealNameText}>{dayMeals.Dinner?.meal_name || 'No dinner scheduled'}</AppText>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
         </View>
+
         <View style={styles.planNote}>
           <AppText style={styles.planNoteIcon}>i</AppText>
-          <AppText style={styles.planNoteText}>Nutritional Focus: Low Carb / High Protein</AppText>
-          <AppText style={styles.planEdit}>Edit Items</AppText>
+          <AppText style={styles.planNoteText}>
+            Nutritional Focus: {plan?.category === 'Cutting' ? 'Low Carb / High Protein' : plan?.category === 'Bulking' ? 'High Calorie / High Protein' : 'Balanced Macros'}
+          </AppText>
         </View>
       </View>
 
@@ -100,62 +164,68 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
             ]}
             onPress={() => setSelectedTime(option.label)}
           >
-            <AppText style={styles.timeIcon}>{option.label === '6:00 AM' ? '🌅' : '☀️'}</AppText>
+            <Ionicons 
+              name={option.label === '6:00 AM' ? 'partly-sunny-outline' : 'sunny-outline'} 
+              size={24} 
+              color={selectedTime === option.label ? COLORS.brand : COLORS.textSecondary} 
+              style={{ marginBottom: 6 }}
+            />
             <AppText style={[styles.timeLabel, selectedTime === option.label && styles.timeLabelActive]}>{option.label}</AppText>
             <AppText style={styles.timeSubtitle}>{option.subtitle}</AppText>
           </Pressable>
         ))}
       </View>
 
-      <AppText style={styles.sectionTitle}>Payment</AppText>
-      <View style={styles.paymentRow}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.paymentOption, 
-            paymentType === 'cash' && styles.paymentOptionActive,
-            pressed && { opacity: 0.75 }
-          ]}
-          onPress={() => setPaymentType('cash')}
-        >
-          <AppText style={[styles.paymentLabel, paymentType === 'cash' && styles.paymentLabelActive]}>Cash on Delivery</AppText>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [
-            styles.paymentOption, 
-            paymentType === 'online' && styles.paymentOptionActive,
-            pressed && { opacity: 0.75 }
-          ]}
-          onPress={() => setPaymentType('online')}
-        >
-          <AppText style={[styles.paymentLabel, paymentType === 'online' && styles.paymentLabelActive]}>Online Payment</AppText>
-        </Pressable>
-      </View>
-
-      {paymentType === 'online' && (
-        <View style={styles.onlineCard}>
+      <AppText style={styles.sectionTitle}>Payment Method</AppText>
+      <View style={styles.paymentCard}>
+        <View style={styles.paymentHeader}>
+          <Ionicons name="card-outline" size={20} color={COLORS.brand} style={{ marginRight: 8 }} />
+          <AppText style={styles.paymentCardTitle}>{MOCK_PAYMENT_METHOD} QR Payment</AppText>
+        </View>
+        
+        <View style={styles.onlineCardContent}>
           <View style={styles.qrPlaceholder}>
-            <AppText style={styles.qrLabel}>QR Code</AppText>
+            <Ionicons name="qr-code-outline" size={48} color={COLORS.brand} style={{ marginBottom: 6 }} />
+            <AppText style={styles.qrLabel}>GCASH / MAYA SCAN TO PAY</AppText>
+            <AppText style={styles.qrSubText}>Save this QR to scan in your payment app</AppText>
           </View>
+          
+          <View style={styles.paymentDetails}>
+            <AppText style={styles.detailsLabel}>Account Name:</AppText>
+            <AppText style={styles.detailsValue}>PrepMate Food Services</AppText>
+            <AppText style={styles.detailsLabel}>GCash / Maya No:</AppText>
+            <AppText style={styles.detailsValue}>0917-123-4567</AppText>
+            <AppText style={styles.detailsLabel}>BDO Account No:</AppText>
+            <AppText style={styles.detailsValue}>0012-3456-7890</AppText>
+          </View>
+
           <Pressable 
-            style={({ pressed }) => [styles.attachButton, pressed && { opacity: 0.75 }]} 
-            onPress={() => setProofAttached(true)}
+            style={({ pressed }) => [
+              styles.attachButton, 
+              proofAttached && styles.attachButtonSuccess,
+              pressed && { opacity: 0.75 }
+            ]} 
+            onPress={() => setProofAttached(!proofAttached)}
           >
-            <AppText style={styles.attachText}>{proofAttached ? 'Proof Attached' : 'Attach Proof of Payment'}</AppText>
+            <Ionicons name={proofAttached ? "checkmark-circle" : "cloud-upload-outline"} size={18} color="#fff" style={{ marginRight: 8 }} />
+            <AppText style={styles.attachText}>
+              {proofAttached ? 'Payment Proof Attached' : 'Attach Proof of Payment'}
+            </AppText>
           </Pressable>
         </View>
-      )}
+      </View>
 
       <AppText style={styles.sectionTitle}>Shipping Address</AppText>
       <View style={styles.addressCard}>
         <AppText style={styles.addressTitle}>Home</AppText>
-        <AppText style={styles.addressText}>482 Fitness Way, Apt 4B, Austin TX</AppText>
+        <AppText style={styles.addressText}>482 Fitness Way, Apt 4B, Manila, Philippines</AppText>
       </View>
 
       <View style={styles.totalCard}>
-        <View style={styles.totalRow}><AppText style={styles.totalLabel}>Subtotal</AppText><AppText style={styles.totalValue}>${Number(plan?.weekly_price || 0).toFixed(2)}</AppText></View>
+        <View style={styles.totalRow}><AppText style={styles.totalLabel}>Subtotal</AppText><AppText style={styles.totalValue}>₱{Number(plan?.weekly_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</AppText></View>
         <View style={styles.totalRow}><AppText style={styles.totalLabel}>Delivery Fee</AppText><AppText style={[styles.totalValue, styles.freeLabel]}>FREE</AppText></View>
         <View style={styles.divider} />
-        <View style={styles.totalRow}><AppText style={styles.totalTitle}>Total</AppText><AppText style={styles.totalTitle}>${Number(plan?.weekly_price || 0).toFixed(2)}</AppText></View>
+        <View style={styles.totalRow}><AppText style={styles.totalTitle}>Total</AppText><AppText style={styles.totalTitle}>₱{Number(plan?.weekly_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</AppText></View>
       </View>
 
       {!preorderEligibility.canPreorder && (
@@ -224,32 +294,13 @@ const styles = StyleSheet.create({
     color: COLORS.brand,
     marginBottom: 18,
   },
-  recipeRow: {
-    flexDirection: 'row',
-    marginBottom: 18,
-  },
-  recipeImage: {
-    width: 84,
-    height: 84,
-    backgroundColor: '#d6ebc1',
-    borderRadius: 20,
-    marginRight: 14,
-  },
-  recipeItems: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  recipeText: {
-    color: COLORS.brand,
-    fontSize: 13,
-    marginBottom: 6,
-  },
   planNote: {
     backgroundColor: '#f3f7e7',
     borderRadius: 20,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 10,
   },
   planNoteIcon: {
     width: 26,
@@ -265,10 +316,66 @@ const styles = StyleSheet.create({
   planNoteText: {
     flex: 1,
     color: COLORS.textSecondary,
+    fontSize: 13,
   },
-  planEdit: {
-    color: COLORS.accent,
+  scheduleContainer: {
+    marginTop: 6,
+    marginBottom: 14,
+  },
+  scheduleTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.brand,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dayCard: {
+    backgroundColor: '#f9fbf7',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#eaf0e3',
+  },
+  dayHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#edf2e8',
+    paddingBottom: 6,
+    marginBottom: 8,
+  },
+  dayName: {
+    color: COLORS.brand,
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  mealsGrid: {
+    gap: 8,
+  },
+  mealRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mealIcon: {
+    marginRight: 8,
+    width: 16,
+    textAlign: 'center',
+  },
+  mealTextContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mealTypeLabel: {
     fontWeight: '700',
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  mealNameText: {
+    fontSize: 12,
+    color: COLORS.brand,
+    fontWeight: '500',
+    flex: 1,
   },
   sectionTitle: {
     fontSize: 18,
@@ -290,14 +397,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: COLORS.surface,
     marginRight: 12,
+    alignItems: 'center',
   },
   timeOptionActive: {
     borderColor: COLORS.accent,
     backgroundColor: COLORS.highlightSubtle,
-  },
-  timeIcon: {
-    fontSize: 18,
-    marginBottom: 4,
   },
   timeLabel: {
     fontSize: 16,
@@ -305,71 +409,95 @@ const styles = StyleSheet.create({
     color: COLORS.brand,
     marginBottom: 4,
   },
-  timeLabelActive: {
-    color: COLORS.brand,
-  },
   timeSubtitle: {
     color: COLORS.textSecondary,
     fontSize: 12,
   },
-  paymentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  paymentOption: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 22,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
+  paymentCard: {
     backgroundColor: COLORS.surface,
-    marginRight: 12,
-    alignItems: 'center',
-  },
-  paymentOptionActive: {
-    borderColor: COLORS.accent,
-    backgroundColor: COLORS.highlightSubtle,
-  },
-  paymentLabel: {
-    color: COLORS.brand,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  paymentLabelActive: {
-    color: COLORS.brand,
-  },
-  onlineCard: {
-    backgroundColor: '#f7f7f0',
     borderRadius: 24,
-    padding: 18,
+    padding: 20,
     marginBottom: 22,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  paymentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.highlightSubtle,
+    borderWidth: 1,
+    borderColor: COLORS.accent,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  paymentCardTitle: {
+    color: COLORS.brand,
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  onlineCardContent: {
+    width: '100%',
+  },
   qrPlaceholder: {
     width: '100%',
-    height: 140,
+    height: 150,
     borderRadius: 20,
-    backgroundColor: '#e3e8d5',
+    backgroundColor: '#edf2e4',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
   },
   qrLabel: {
     color: COLORS.brand,
     fontWeight: '800',
+    fontSize: 13,
+    letterSpacing: 1,
+  },
+  qrSubText: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  paymentDetails: {
+    backgroundColor: '#f9fbf7',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#eaf0e3',
+  },
+  detailsLabel: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  detailsValue: {
+    color: COLORS.brand,
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 8,
   },
   attachButton: {
     backgroundColor: COLORS.brand,
     borderRadius: 18,
     paddingVertical: 14,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  attachButtonSuccess: {
+    backgroundColor: '#2a9d8f',
   },
   attachText: {
     color: COLORS.surface,
     fontWeight: '700',
+    fontSize: 14,
   },
   addressCard: {
     backgroundColor: COLORS.surface,
@@ -450,3 +578,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+

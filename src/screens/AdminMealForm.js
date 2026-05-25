@@ -5,7 +5,7 @@ import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 import { usePlans } from '../context/PlansContext';
 import { addMealToPlan, deleteMeal, updateMeal } from '../services/mealsService';
-import { normalizeDayLabel } from '../services/plansService';
+import { normalizeDayLabel, MEAL_TYPES } from '../services/plansService';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -20,6 +20,7 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
   const [protein, setProtein] = useState('');
   const [carbs, setCarbs] = useState('');
   const [fats, setFats] = useState('');
+  const [mealType, setMealType] = useState('Breakfast');
   const [loading, setLoading] = useState(false);
   const activePlan = plans?.find((p) => p.id === selectedPlanId);
   const selectedDayLabel = normalizeDayLabel(selectedDay);
@@ -44,6 +45,7 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
 
   const resetMealForm = () => {
     setEditingMealId(null);
+    setMealType('Breakfast');
     setMealName('');
     setDescription('');
     setCalories('');
@@ -55,6 +57,7 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
   const handleEditMeal = (meal) => {
     setEditingMealId(meal.id);
     setSelectedDay(meal.day_of_week || selectedDay);
+    setMealType(meal.meal_type || 'Breakfast');
     setMealName(meal.meal_name || '');
     setDescription(meal.description || '');
     setCalories(meal.calories?.toString() || '');
@@ -100,6 +103,7 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
     setLoading(true);
     const mealPayload = {
       day_of_week: selectedDay,
+      meal_type: mealType,
       meal_name: mealName.trim(),
       description: description.trim(),
       calories: parseInt(calories, 10) || 0,
@@ -173,6 +177,21 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
         ))}
       </ScrollView>
 
+      <AppText style={styles.fieldLabel}>Meal Type</AppText>
+      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 4 }}>
+        {MEAL_TYPES.map((type) => (
+          <Pressable
+            key={type}
+            style={[styles.chip, mealType === type && styles.chipActive, { marginRight: 0 }]}
+            onPress={() => setMealType(type)}
+          >
+            <AppText style={[styles.chipText, mealType === type && styles.chipTextActive]}>
+              {type}
+            </AppText>
+          </Pressable>
+        ))}
+      </View>
+
       <View style={styles.existingSection}>
         <AppText style={styles.existingTitle}>{selectedDayLabel} Meals</AppText>
         {existingMeals.length === 0 && (
@@ -181,7 +200,14 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
         {existingMeals.map((meal) => (
           <View key={meal.id} style={styles.existingMealCard}>
             <View style={styles.existingMealInfo}>
-              <AppText style={styles.existingMealTitle}>{meal.meal_name}</AppText>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <AppText style={styles.existingMealTitle}>{meal.meal_name}</AppText>
+                <View style={{ backgroundColor: COLORS.brand, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                  <Text style={{ color: COLORS.surface, fontSize: 10, fontWeight: '700' }}>
+                    {meal.meal_type || 'Lunch'}
+                  </Text>
+                </View>
+              </View>
               <AppText style={styles.existingMealMeta}>{meal.calories || 0} kcal | P {meal.protein_g || 0}g | C {meal.carbs_g || 0}g | F {meal.fats_g || 0}g</AppText>
             </View>
             <View style={styles.existingMealActions}>

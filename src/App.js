@@ -20,14 +20,18 @@ import AdminOrdersScreen from './screens/AdminOrdersScreen';
 import AdminMealsScreen from './screens/AdminMealsScreen';
 import AdminMealForm from './screens/AdminMealForm';
 import AdminPlanFormScreen from './screens/AdminPlanFormScreen';
+import AdminUsersScreen from './screens/AdminUsersScreen';
+import AdminUserDetailsScreen from './screens/AdminUserDetailsScreen';
 import CheckoutScreen from './screens/CheckoutScreen';
 import ReviewScreen from './screens/ReviewScreen';
 import WeeklyPlanScreen from './screens/WeeklyPlanScreen';
+import EditProfileScreen from './screens/EditProfileScreen';
 import BottomNav from './components/BottomNav';
 import AdminBottomNav from './components/AdminBottomNav';
 import { COLORS } from './theme';
 import { supabase } from './lib/supabaseClient';
 import { PlansProvider } from './context/PlansContext';
+import { profilesService } from './services/profilesService';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -49,6 +53,9 @@ export default function App() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [adminMealPlanId, setAdminMealPlanId] = useState(null);
   const [adminPlanFormConfig, setAdminPlanFormConfig] = useState({ initialPlan: null, defaults: null });
+  const [editSection, setEditSection] = useState('Personal Information');
+  const [selectedAdminUserId, setSelectedAdminUserId] = useState(null);
+  const [reviewOrder, setReviewOrder] = useState(null);
 
   const route = history[history.length - 1];
 
@@ -97,19 +104,31 @@ export default function App() {
     };
   }, []);
 
-  const handleSession = (session) => {
+  const handleSession = async (session) => {
     if (!session) {
       setHistory(['login']);
       return;
     }
     const role = session.user.app_metadata?.role || 'customer';
+    
+    // Default fallbacks from user_metadata
+    let fullName = session.user.user_metadata?.full_name || (role === 'admin' ? 'FitFood Admin' : 'Customer');
+    let goal = session.user.user_metadata?.goal || 'bulking';
+    
+    // Hydrate from public profiles table
+    const profile = await profilesService.getCurrentProfile();
+    if (profile) {
+      if (profile.full_name) fullName = profile.full_name;
+      if (profile.goal) goal = profile.goal;
+    }
+
     setUser((prev) => ({
       ...prev,
       id: session.user.id,
       role,
       email: session.user.email,
-      name: session.user.user_metadata?.full_name || (role === 'admin' ? 'FitFood Admin' : 'Customer'),
-      goal: session.user.user_metadata?.goal || prev.goal,
+      name: fullName,
+      goal: goal,
     }));
     
     // Ensure we route to the appropriate home if currently on login or register
@@ -165,13 +184,38 @@ export default function App() {
       case 'plans':
         return <PlansScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} onBack={history.length > 1 ? navigateBack : null} />;
       case 'orders':
-        return <OrdersScreen user={user} onOpenCheckout={handleOpenCheckout} onOpenReview={() => navigateTo('review')} onBack={history.length > 1 ? navigateBack : null} />;
+        return <OrdersScreen user={user} onOpenCheckout={handleOpenCheckout} onOpenReview={(order) => { setReviewOrder(order); navigateTo('review'); }} onBack={history.length > 1 ? navigateBack : null} />;
       case 'profile':
-        return <ProfileScreen user={user} onLogout={handleLogout} onBack={history.length > 1 ? navigateBack : null} />;
+        return <ProfileScreen 
+          user={user} 
+          onLogout={handleLogout} 
+          onEditProfile={(section) => { setEditSection(section); navigateTo('editProfile'); }}
+          onBack={history.length > 1 ? navigateBack : null} 
+        />;
+      case 'editProfile':
+        return <EditProfileScreen 
+          section={editSection} 
+          user={user} 
+          onBack={navigateBack} 
+          onSave={async (updates) => {
+            const { success } = await profilesService.updateCurrentProfile({
+              full_name: updates.name,
+              goal: updates.goal,
+              address: updates.address,
+            });
+            if (success) {
+              // Refresh user state
+              setUser(prev => ({ ...prev, name: updates.name, goal: updates.goal, address: updates.address }));
+              navigateBack();
+            } else {
+              alert('Failed to update profile');
+            }
+          }} 
+        />;
       case 'checkout':
         return <CheckoutScreen plan={selectedPlan} user={user} onBack={navigateBack} onConfirm={() => resetTo('orders')} />;
       case 'review':
-        return <ReviewScreen onBack={navigateBack} onSubmit={navigateBack} />;
+        return <ReviewScreen order={reviewOrder} onBack={navigateBack} onSubmit={navigateBack} />;
       case 'weeklyPlan':
         return <WeeklyPlanScreen onBack={navigateBack} onPreorder={handleOpenCheckout} />;
       case 'adminHome':
@@ -197,6 +241,10 @@ export default function App() {
         );
       case 'adminMealForm':
         return <AdminMealForm initialPlanId={adminMealPlanId} onBack={navigateBack} />;
+      case 'adminUsers':
+        return <AdminUsersScreen onOpenUserDetails={(id) => { setSelectedAdminUserId(id); navigateTo('adminUserDetails'); }} onBack={history.length > 1 ? navigateBack : null} />;
+      case 'adminUserDetails':
+        return <AdminUserDetailsScreen profileId={selectedAdminUserId} onBack={navigateBack} />;
       default:
         return <HomeScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} />;
     }
@@ -211,7 +259,7 @@ export default function App() {
           {['home', 'plans', 'orders', 'profile', 'weeklyPlan'].includes(route) && (
             <BottomNav active={route === 'weeklyPlan' ? 'plans' : route} onChange={resetTo} />
           )}
-          {['adminHome', 'adminOrders', 'adminMeals'].includes(route) && (
+          {['adminHome', 'adminOrders', 'adminMeals', 'adminUsers'].includes(route) && (
             <AdminBottomNav active={route} onChange={resetTo} />
           )}
         </View>

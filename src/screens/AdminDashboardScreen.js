@@ -17,7 +17,7 @@ export default function AdminDashboardScreen({ user, onLogout, onBack }) {
       if (data) {
         setOrderCount(data.length);
         const total = data.reduce((sum, o) => sum + Number(o.published_weekly_plans?.weekly_price || 0), 0);
-        setRevenue(`$${total.toFixed(2)}`);
+        setRevenue(`₱${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
       }
     })();
   }, []);

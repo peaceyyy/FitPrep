@@ -4,6 +4,13 @@ import { ScrollView, StyleSheet, View, Pressable, ActivityIndicator } from 'reac
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 import { fetchMyOrders } from '../services/ordersService';
+import { getWeekEndDate } from '../services/plansService';
+
+const isPastSunday = (weekStartDate) => {
+  if (!weekStartDate) return false;
+  const endDate = new Date(`${getWeekEndDate(weekStartDate)}T23:59:59`);
+  return new Date() > endDate;
+};
 
 export default function OrdersScreen({ onOpenReview, onBack }) {
   const [orders, setOrders] = useState([]);
@@ -24,7 +31,7 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
 
   const formatPrice = (value) => {
     const amount = Number(value);
-    return Number.isNaN(amount) ? '$--' : `$${amount.toFixed(2)}`;
+    return Number.isNaN(amount) ? '₱--' : `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
   };
 
   const getStatusColor = (status) => {
@@ -76,12 +83,18 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
                     {order.status?.toUpperCase() || 'UNKNOWN'}
                   </AppText>
                 </View>
-                <Pressable 
-                  style={({ pressed }) => [styles.reviewButton, pressed && { opacity: 0.75 }]} 
-                  onPress={() => onOpenReview(order)}
-                >
-                  <AppText style={styles.reviewButtonText}>Review</AppText>
-                </Pressable>
+                {isPastSunday(order.published_weekly_plans?.week_start_date) ? (
+                  <Pressable
+                    style={({ pressed }) => [styles.reviewButton, pressed && { opacity: 0.75 }]}
+                    onPress={() => onOpenReview(order)}
+                  >
+                    <AppText style={styles.reviewButtonText}>Review</AppText>
+                  </Pressable>
+                ) : (
+                  <View style={[styles.reviewButton, { backgroundColor: '#e2e6d9' }]}>
+                    <AppText style={[styles.reviewButtonText, { color: COLORS.muted }]}>Review later</AppText>
+                  </View>
+                )}
               </View>
             </View>
           ))}
@@ -90,7 +103,7 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
 
       <View style={styles.ctaCard}>
         <AppText style={styles.ctaHeading}>Ready for next week?</AppText>
-        <AppText style={styles.ctaDescription}>New plans are published every Saturday. Check back to preorder!</AppText>
+        <AppText style={styles.ctaDescription}>New plans open for preorder as soon as they are published.</AppText>
       </View>
     </ScrollView>
   );
@@ -179,6 +192,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 12,
+    marginBottom: 6,
   },
   statusText: {
     color: COLORS.accent,
@@ -187,17 +201,6 @@ const styles = StyleSheet.create({
   },
   orderActions: {
     alignItems: 'flex-end',
-  },
-  orderButton: {
-    backgroundColor: '#f4f7ef',
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 8,
-  },
-  orderButtonText: {
-    color: COLORS.brand,
-    fontWeight: '700',
   },
   reviewButton: {
     backgroundColor: COLORS.highlight,

@@ -17,7 +17,7 @@ const CATEGORY_LABELS = {
 
 function formatPrice(price) {
   const value = Number(price);
-  return Number.isNaN(value) ? '$--' : `$${value.toFixed(2)}/wk`;
+  return Number.isNaN(value) ? '₱--' : `₱${value.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 }
 
 export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, onBack }) {
@@ -63,8 +63,8 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
         <AppText style={styles.greeting}>Your Meal Plans</AppText>
         <AppText style={styles.description}>
           {subscriptionForWeek
-            ? `You're on ${subscriptionPlan?.name || 'a plan'} this week. Preorders open every Sunday.`
-            : 'Browse plans below. Preorders open every Sunday for the next week.'}
+            ? `You're on ${subscriptionPlan?.name || 'a plan'} this week.`
+            : 'Browse plans below. Preorders open when next week plans are published.'}
         </AppText>
       </View>
 
@@ -94,7 +94,7 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
       </View>
 
       {!canShowNextWeek && isCurrentWeek && (
-        <AppText style={styles.navHint}>Next week opens for customers on Sunday once the menu is published.</AppText>
+        <AppText style={styles.navHint}>Next week opens for customers once the menu is published.</AppText>
       )}
 
       {/* Category Tabs */}

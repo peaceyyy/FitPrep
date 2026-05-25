@@ -11,7 +11,7 @@ const stats = [
   { label: 'Next Cycle', value: '3d' },
 ];
 
-export default function ProfileScreen({ user, onLogout, onBack }) {
+export default function ProfileScreen({ user, onLogout, onEditProfile, onBack }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <HeaderBar title="Profile" onBack={onBack} />
@@ -40,6 +40,15 @@ export default function ProfileScreen({ user, onLogout, onBack }) {
             <AppText style={styles.statLabel}>{item.label.toUpperCase()}</AppText>
             <AppText style={styles.statValue}>{item.value}</AppText>
           </View>
+        ))}
+      </View>
+
+      <View style={styles.menuContainer}>
+        {['Personal Information', 'Fitness Goals', 'Delivery Address', 'Payment Methods'].map(section => (
+          <Pressable key={section} style={styles.menuItem} onPress={() => onEditProfile(section)}>
+            <AppText style={styles.menuItemText}>{section}</AppText>
+            <AppText style={styles.menuItemArrow}>→</AppText>
+          </Pressable>
         ))}
       </View>
 
@@ -168,5 +177,31 @@ const styles = StyleSheet.create({
     color: COLORS.danger,
     fontWeight: '800',
     fontSize: 15,
+  },
+  menuContainer: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 16,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  menuItemText: {
+    color: COLORS.brand,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  menuItemArrow: {
+    color: COLORS.muted,
+    fontSize: 20,
   },
 });

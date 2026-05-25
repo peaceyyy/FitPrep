@@ -35,6 +35,15 @@ export default function WeeklyPlanScreen({ onBack, onPreorder }) {
     selectedPlanMeals.filter((meal) => normalizeDayLabel(meal.day_of_week) === selectedDay)
   ), [selectedDay, selectedPlanMeals]);
 
+  const sortedDayMeals = useMemo(() => {
+    const mealTypeOrder = { 'Breakfast': 0, 'Lunch': 1, 'Dinner': 2 };
+    return [...dayMeals].sort((a, b) => {
+      const indexA = mealTypeOrder[a.meal_type] !== undefined ? mealTypeOrder[a.meal_type] : 9;
+      const indexB = mealTypeOrder[b.meal_type] !== undefined ? mealTypeOrder[b.meal_type] : 9;
+      return indexA - indexB;
+    });
+  }, [dayMeals]);
+
   const isCurrentWeek = browsingWeekStartDate === currentWeekStartDate;
   const canPreorder = preorderEligibility.canPreorder;
   const subscriptionPlanName = subscriptionForWeek?.published_weekly_plans?.name;
@@ -114,11 +123,18 @@ export default function WeeklyPlanScreen({ onBack, onPreorder }) {
             </View>
           )}
 
-          {dayMeals.map((meal) => (
+          {sortedDayMeals.map((meal) => (
             <View key={meal.id} style={styles.mealCard}>
               <View style={styles.mealHeader}>
-                <View style={styles.mealDayBadge}>
-                  <AppText style={styles.mealDayText}>{selectedDay}</AppText>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <View style={styles.mealDayBadge}>
+                    <AppText style={styles.mealDayText}>{selectedDay}</AppText>
+                  </View>
+                  <View style={[styles.mealDayBadge, { backgroundColor: COLORS.highlight }]}>
+                    <AppText style={[styles.mealDayText, { color: COLORS.brand }]}>
+                      {meal.meal_type || 'Lunch'}
+                    </AppText>
+                  </View>
                 </View>
                 <AppText style={styles.mealCalories}>{meal.calories || 0} kcal</AppText>
               </View>

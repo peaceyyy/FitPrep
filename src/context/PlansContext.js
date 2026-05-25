@@ -9,7 +9,6 @@ import {
   getNextWeekStartDate,
   getPreorderEligibility,
   getPreviousWeekStartDate,
-  isSunday,
   normalizeCategory,
   updatePlan,
 } from '../services/plansService';

@@ -20,6 +20,13 @@ export const DAY_LABELS = {
 
 export const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const PLAN_CATEGORIES = ['Cutting', 'Bulking', 'Maintenance'];
+export const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner'];
+export const MEAL_TYPE_ORDER = ['Breakfast', 'Lunch', 'Dinner'];
+
+export function getMealTypeSortIndex(mealType) {
+  const index = MEAL_TYPE_ORDER.indexOf(mealType);
+  return index === -1 ? MEAL_TYPE_ORDER.length : index;
+}
 
 function toDateOnly(date) {
   const year = date.getFullYear();
@@ -117,7 +124,6 @@ export function getPreorderEligibility({
   currentWeekStartDate = getCurrentWeekStartDate(),
   selectedPlan,
   subscriptionForWeek,
-  today = new Date(),
 } = {}) {
   const nextWeekStartDate = getNextWeekStartDate(currentWeekStartDate);
 
@@ -129,21 +135,10 @@ export function getPreorderEligibility({
     };
   }
 
-  // Bypassed for Demo: Preorders open at any time if there is a plan for next week
-  /*
-  if (!isSunday(today)) {
-    return {
-      canPreorder: false,
-      reason: 'Preorders open every Sunday for the next meal week.',
-      targetWeekStartDate: nextWeekStartDate,
-    };
-  }
-  */
-
   if (browsingWeekStartDate !== nextWeekStartDate) {
     return {
       canPreorder: false,
-      reason: 'Sunday preorders are only for next week.',
+      reason: 'Preorders are for the upcoming Monday-Sunday meal week.',
       targetWeekStartDate: nextWeekStartDate,
     };
   }
@@ -158,7 +153,7 @@ export function getPreorderEligibility({
 
   return {
     canPreorder: true,
-    reason: 'Sunday preorder window is open for next week.',
+    reason: 'Preorders are open for this published weekly plan.',
     targetWeekStartDate: nextWeekStartDate,
   };
 }

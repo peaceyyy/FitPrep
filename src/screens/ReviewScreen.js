@@ -1,28 +1,31 @@
 import AppText from '../components/AppText';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable, TextInput } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 
 const starLabels = ['Terrible', 'Bad', 'Okay', 'Good', 'Excellent'];
 
-export default function ReviewScreen({ onBack, onSubmit }) {
+export default function ReviewScreen({ order, onBack, onSubmit }) {
   const [rating, setRating] = useState(4);
   const [comment, setComment] = useState('');
 
+  const planName = order?.published_weekly_plans?.name || 'Your Weekly Plan';
+  const orderId = order?.id?.substring(0, 8).toUpperCase() || 'XXXXXXXX';
+
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Rate Your Meal" onBack={onBack} action={{ icon: 'user', onPress: () => {} }} />
+      <HeaderBar title="Rate Your Week" onBack={onBack} />
 
       <View style={styles.heroCard}>
         <View style={styles.heroImage} />
-        <AppText style={styles.mealTitle}>Atlantic Grilled Salmon</AppText>
-        <AppText style={styles.mealSubtitle}>ORDER #88291 · DELIVERED 20M AGO</AppText>
+        <AppText style={styles.mealTitle}>{planName}</AppText>
+        <AppText style={styles.mealSubtitle}>ORDER #{orderId} · WEEK COMPLETED</AppText>
       </View>
 
       <View style={styles.reviewCard}>
-        <AppText style={styles.reviewHeading}>How was the taste?</AppText>
-        <AppText style={styles.reviewSubtext}>Tap a star to rate your meal experience</AppText>
+        <AppText style={styles.reviewHeading}>How was the food?</AppText>
+        <AppText style={styles.reviewSubtext}>Tap a star to rate your overall meal experience this week</AppText>
         <View style={styles.ratingRow}>
           {[1, 2, 3, 4, 5].map((star) => (
             <Pressable key={star} onPress={() => setRating(star)}>
@@ -37,8 +40,8 @@ export default function ReviewScreen({ onBack, onSubmit }) {
         <AppText style={styles.commentLabel}>Share your thoughts</AppText>
         <TextInput
           style={styles.commentInput}
-          placeholder="The seasoning was perfect, but could use more greens..."
-          placeholderTextColor={COLORS.textTertiary}
+          placeholder="The meals were filling and tasty, but could use more variety..."
+          placeholderTextColor={COLORS.textTertiary || COLORS.muted}
           value={comment}
           multiline
           numberOfLines={4}
@@ -49,13 +52,17 @@ export default function ReviewScreen({ onBack, onSubmit }) {
       <View style={styles.metricsRow}>
         <View style={styles.metricCard}>
           <AppText style={styles.metricTitle}>Freshness</AppText>
-          <View style={styles.metricTrack}><View style={[styles.metricFill, { width: '80%' }]} /></View>
-          <AppText style={styles.metricValue}>4.8</AppText>
+          <View style={styles.metricTrack}>
+            <View style={[styles.metricFill, { width: `${rating * 20}%` }]} />
+          </View>
+          <AppText style={styles.metricValue}>{(rating * 1.2).toFixed(1)}</AppText>
         </View>
         <View style={[styles.metricCard, styles.metricSpacing]}>
           <AppText style={styles.metricTitle}>Portion</AppText>
-          <View style={styles.metricTrack}><View style={[styles.metricFill, { width: '64%' }]} /></View>
-          <AppText style={styles.metricValue}>4.2</AppText>
+          <View style={styles.metricTrack}>
+            <View style={[styles.metricFill, { width: `${Math.min(rating * 18, 100)}%` }]} />
+          </View>
+          <AppText style={styles.metricValue}>{(rating * 1.0).toFixed(1)}</AppText>
         </View>
       </View>
 

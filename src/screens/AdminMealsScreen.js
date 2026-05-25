@@ -1,6 +1,7 @@
 import AppText from '../components/AppText';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 import { usePlans } from '../context/PlansContext';
@@ -12,7 +13,6 @@ import {
   getCurrentWeekStartDate,
   getNextWeekStartDate,
   getPreviousWeekStartDate,
-  getTodayDayLabel,
   normalizeDayLabel,
 } from '../services/plansService';
 import { fetchAllOrders } from '../services/ordersService';
@@ -38,8 +38,8 @@ const maxFutureWeekStartDate = Array.from({ length: 4 }).reduce(
 
 function formatPrice(price) {
   const value = Number(price);
-  if (Number.isNaN(value)) return '$--';
-  return `$${value.toFixed(2)}/wk`;
+  if (Number.isNaN(value)) return '₱--';
+  return `₱${value.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 }
 
 function formatWeekStart(date) {
@@ -70,6 +70,7 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
   const [adminWeekStartDate, setAdminWeekStartDate] = useState(currentWeekStartDate);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [mealSnapshots, setMealSnapshots] = useState({});
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -108,17 +109,11 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
     }, { readyPlans: 0, totalPlans: 0 });
   }, [mealSnapshots, weekPlans]);
 
-  const todayLabel = getTodayDayLabel();
-  const todayMeals = useMemo(() => (
-    weekPlans.flatMap((plan) => (
-      (mealSnapshots[plan.id] || [])
-        .filter((meal) => normalizeDayLabel(meal.day_of_week) === todayLabel)
-        .map((meal) => ({ ...meal, planName: plan.name, category: plan.category }))
-    ))
-  ), [mealSnapshots, todayLabel, weekPlans]);
-
   const canShowNextWeek = adminWeekStartDate < maxFutureWeekStartDate;
   const isCurrentWeek = adminWeekStartDate === currentWeekStartDate;
+  const selectedCategoryLabel = CATEGORY_FILTERS.find((category) => category.key === selectedCategory)?.label || 'All';
+  const selectedStatusLabel = STATUS_FILTERS.find((status) => status.key === selectedStatus)?.label || 'All';
+  const activeFilterCount = [selectedCategory !== 'all', selectedStatus !== 'all'].filter(Boolean).length;
 
   useEffect(() => {
     let cancelled = false;
@@ -213,7 +208,7 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
           </View>
           <View style={styles.planTitleGroup}>
             <AppText style={styles.planTitle}>{plan.name}</AppText>
-            <AppText style={styles.planCategory}>{plan.category}</AppText>
+            <AppText style={styles.planCategory}>{plan.category} | Week of {formatWeekStart(plan.week_start_date)}</AppText>
           </View>
           <View style={[styles.statusChip, !plan.is_published && styles.statusChipMuted]}>
             <AppText style={styles.statusText}>{plan.is_published ? 'Published' : 'Draft'}</AppText>
@@ -223,7 +218,6 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
         <AppText style={styles.planSubtitle}>{plan.description || 'No description yet.'}</AppText>
 
         <View style={styles.metaRow}>
-          <AppText style={styles.planWeek}>Week of {formatWeekStart(plan.week_start_date)}</AppText>
           <AppText style={[styles.readinessText, readiness.isReady ? styles.readinessReady : styles.readinessMissing]}>
             {readiness.label}
           </AppText>
@@ -258,7 +252,7 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
           <AppText style={styles.titleMeta}>{source === 'supabase' ? 'Live Supabase data' : 'Mock fallback data'}</AppText>
         </View>
         <Pressable style={({ pressed }) => [styles.createButton, pressed && styles.pressed]} onPress={() => handleCreatePlan()}>
-          <AppText style={styles.createButtonText}>Create</AppText>
+          <AppText style={styles.createButtonText}>Create Week Plan</AppText>
         </Pressable>
       </View>
 
@@ -298,55 +292,24 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
         </View>
       </View>
 
-      <View style={styles.todayPanel}>
-        <View style={styles.todayHeader}>
-          <View>
-            <AppText style={styles.todayTitle}>Today</AppText>
-            <AppText style={styles.todayMeta}>{todayLabel} meals for the selected week</AppText>
-          </View>
-          <View style={styles.phaseChip}>
-            <AppText style={styles.phaseChipText}>Delivery in Phase 4</AppText>
-          </View>
+      <View style={styles.filterBar}>
+        <View style={styles.filterCopy}>
+          <AppText style={styles.filterSummary}>Filters: {selectedCategoryLabel} / {selectedStatusLabel}</AppText>
+          <AppText style={styles.filterMeta}>{filteredPlans.length} of {weekPlans.length} plans shown</AppText>
         </View>
-        {todayMeals.length === 0 ? (
-          <AppText style={styles.todayEmpty}>No meals uploaded for {todayLabel} yet.</AppText>
-        ) : (
-          todayMeals.slice(0, 4).map((meal) => (
-            <View key={`${meal.planName}-${meal.id}`} style={styles.todayMealRow}>
-              <View style={styles.todayMealCopy}>
-                <AppText style={styles.todayMealTitle}>{meal.meal_name}</AppText>
-                <AppText style={styles.todayMealMeta}>{meal.category} | {meal.planName}</AppText>
-              </View>
-              <AppText style={styles.todayMealCalories}>{meal.calories || 0} kcal</AppText>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open plan filters"
+          style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}
+          onPress={() => setFilterSheetVisible(true)}
+        >
+          <Feather name="filter" size={18} color={COLORS.brand} />
+          {activeFilterCount > 0 && (
+            <View style={styles.filterBadge}>
+              <AppText style={styles.filterBadgeText}>{activeFilterCount}</AppText>
             </View>
-          ))
-        )}
-      </View>
-
-      <AppText style={styles.filterLabel}>Category</AppText>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroller}>
-        {CATEGORY_FILTERS.map((category) => (
-          <Pressable
-            key={category.key}
-            style={({ pressed }) => [styles.filterChip, selectedCategory === category.key && styles.filterChipActive, pressed && styles.pressed]}
-            onPress={() => setSelectedCategory(category.key)}
-          >
-            <AppText style={[styles.filterChipText, selectedCategory === category.key && styles.filterChipTextActive]}>{category.label}</AppText>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <AppText style={styles.filterLabel}>Status</AppText>
-      <View style={styles.statusFilters}>
-        {STATUS_FILTERS.map((status) => (
-          <Pressable
-            key={status.key}
-            style={({ pressed }) => [styles.statusFilterChip, selectedStatus === status.key && styles.statusFilterActive, pressed && styles.pressed]}
-            onPress={() => setSelectedStatus(status.key)}
-          >
-            <AppText style={[styles.statusFilterText, selectedStatus === status.key && styles.statusFilterTextActive]}>{status.label}</AppText>
-          </Pressable>
-        ))}
+          )}
+        </Pressable>
       </View>
 
       <View style={styles.sectionTitleRow}>
@@ -365,46 +328,126 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
   }
 
   return (
-    <FlatList
-      style={styles.root}
-      contentContainerStyle={styles.content}
-      data={filteredPlans}
-      keyExtractor={(item) => item.id}
-      renderItem={renderPlanCard}
-      ListHeaderComponent={ListHeader}
-      ListEmptyComponent={(
-        <View style={styles.emptyState}>
-          {!!error ? (
-            <>
-              <AppText style={styles.emptyTitle}>Could not load plans</AppText>
-              <AppText style={styles.emptyText}>{error}</AppText>
-            </>
-          ) : weekPlans.length === 0 ? (
-            <>
-              <AppText style={styles.emptyTitle}>No plans for this week yet.</AppText>
-              <AppText style={styles.emptyText}>Start the week quickly by choosing a plan category.</AppText>
-              <View style={styles.quickActions}>
-                {PLAN_CATEGORIES.map((category) => (
-                  <Pressable key={category} style={styles.quickAction} onPress={() => handleCreatePlan(category)}>
-                    <AppText style={styles.quickActionText}>Create {category}</AppText>
-                  </Pressable>
-                ))}
+    <View style={styles.root}>
+      <FlatList
+        style={styles.root}
+        contentContainerStyle={styles.content}
+        data={filteredPlans}
+        keyExtractor={(item) => item.id}
+        renderItem={renderPlanCard}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={(
+          <View style={styles.emptyState}>
+            {!!error ? (
+              <>
+                <AppText style={styles.emptyTitle}>Could not load plans</AppText>
+                <AppText style={styles.emptyText}>{error}</AppText>
+              </>
+            ) : weekPlans.length === 0 ? (
+              <>
+                <AppText style={styles.emptyTitle}>No plans for this week yet.</AppText>
+                <AppText style={styles.emptyText}>Start the week quickly by choosing a plan category.</AppText>
+                <View style={styles.quickActions}>
+                  {PLAN_CATEGORIES.map((category) => (
+                    <Pressable key={category} style={styles.quickAction} onPress={() => handleCreatePlan(category)}>
+                      <AppText style={styles.quickActionText}>Create {category}</AppText>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <>
+                <AppText style={styles.emptyTitle}>No plans match these filters.</AppText>
+                <AppText style={styles.emptyText}>Try another category or status filter.</AppText>
+              </>
+            )}
+          </View>
+        )}
+      />
+
+      <Modal
+        animationType="slide"
+        transparent
+        visible={filterSheetVisible}
+        onRequestClose={() => setFilterSheetVisible(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setFilterSheetVisible(false)}>
+          <Pressable style={styles.filterSheet}>
+            <View style={styles.sheetHeader}>
+              <View>
+                <AppText style={styles.sheetTitle}>Plan Filters</AppText>
+                <AppText style={styles.sheetMeta}>{formatWeekRange(adminWeekStartDate)}</AppText>
               </View>
-            </>
-          ) : (
-            <>
-              <AppText style={styles.emptyTitle}>No plans match these filters.</AppText>
-              <AppText style={styles.emptyText}>Try another category or status filter.</AppText>
-            </>
-          )}
-        </View>
-      )}
-    />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close plan filters"
+                style={({ pressed }) => [styles.sheetCloseButton, pressed && styles.pressed]}
+                onPress={() => setFilterSheetVisible(false)}
+              >
+                <Feather name="x" size={20} color={COLORS.brand} />
+              </Pressable>
+            </View>
+
+            <AppText style={styles.sheetSectionLabel}>Category</AppText>
+            <View style={styles.sheetOptions}>
+              {CATEGORY_FILTERS.map((category) => {
+                const isActive = selectedCategory === category.key;
+                return (
+                  <Pressable
+                    key={category.key}
+                    style={({ pressed }) => [styles.sheetOption, isActive && styles.sheetOptionActive, pressed && styles.pressed]}
+                    onPress={() => setSelectedCategory(category.key)}
+                  >
+                    <AppText style={[styles.sheetOptionText, isActive && styles.sheetOptionTextActive]}>{category.label}</AppText>
+                    {isActive && <Feather name="check" size={18} color={COLORS.brand} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <AppText style={styles.sheetSectionLabel}>Status</AppText>
+            <View style={styles.sheetOptions}>
+              {STATUS_FILTERS.map((status) => {
+                const isActive = selectedStatus === status.key;
+                return (
+                  <Pressable
+                    key={status.key}
+                    style={({ pressed }) => [styles.sheetOption, isActive && styles.sheetOptionActive, pressed && styles.pressed]}
+                    onPress={() => setSelectedStatus(status.key)}
+                  >
+                    <AppText style={[styles.sheetOptionText, isActive && styles.sheetOptionTextActive]}>{status.label}</AppText>
+                    {isActive && <Feather name="check" size={18} color={COLORS.brand} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.sheetActions}>
+              <Pressable
+                style={({ pressed }) => [styles.sheetSecondaryAction, pressed && styles.pressed]}
+                onPress={() => {
+                  setSelectedCategory('all');
+                  setSelectedStatus('all');
+                }}
+              >
+                <AppText style={styles.sheetSecondaryText}>Reset</AppText>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.sheetPrimaryAction, pressed && styles.pressed]}
+                onPress={() => setFilterSheetVisible(false)}
+              >
+                <AppText style={styles.sheetPrimaryText}>Done</AppText>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { backgroundColor: COLORS.background },
+  root: { flex: 1, backgroundColor: COLORS.background },
   centered: { alignItems: 'center', justifyContent: 'center' },
   content: { padding: 20, paddingBottom: 140 },
   subHeading: { color: COLORS.accent, fontSize: 12, letterSpacing: 1.2, marginBottom: 6 },
@@ -412,8 +455,8 @@ const styles = StyleSheet.create({
   titleCopy: { flex: 1, paddingRight: 12 },
   title: { color: COLORS.brand, fontSize: 28, fontWeight: '900', marginBottom: 6 },
   titleMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
-  createButton: { minHeight: 48, borderRadius: 18, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand },
-  createButtonText: { color: COLORS.surface, fontWeight: '900' },
+  createButton: { minHeight: 48, maxWidth: 148, borderRadius: 16, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand },
+  createButtonText: { color: COLORS.surface, fontWeight: '900', fontSize: 12, textAlign: 'center' },
   weekNavigator: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   weekArrow: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
   weekArrowDisabled: { opacity: 0.45 },
@@ -427,29 +470,13 @@ const styles = StyleSheet.create({
   summaryCard: { flex: 1, minHeight: 76, backgroundColor: COLORS.surface, borderRadius: 18, borderWidth: 1, borderColor: COLORS.border, padding: 14, marginRight: 10 },
   summaryValue: { color: COLORS.brand, fontSize: 22, fontWeight: '900', marginBottom: 4 },
   summaryLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '800' },
-  todayPanel: { backgroundColor: COLORS.surface, borderRadius: 22, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 16 },
-  todayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  todayTitle: { color: COLORS.brand, fontSize: 18, fontWeight: '900', marginBottom: 4 },
-  todayMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
-  phaseChip: { backgroundColor: '#eef3e4', borderRadius: 999, paddingVertical: 7, paddingHorizontal: 10 },
-  phaseChipText: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '800' },
-  todayEmpty: { color: COLORS.textSecondary, fontSize: 13, lineHeight: 18 },
-  todayMealRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f4f7ef', borderRadius: 16, padding: 12, marginBottom: 8 },
-  todayMealCopy: { flex: 1, paddingRight: 10 },
-  todayMealTitle: { color: COLORS.brand, fontSize: 14, fontWeight: '900', marginBottom: 4 },
-  todayMealMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
-  todayMealCalories: { color: COLORS.accent, fontSize: 12, fontWeight: '900' },
-  filterLabel: { color: COLORS.brand, fontWeight: '900', marginBottom: 8, marginTop: 6 },
-  filterScroller: { marginBottom: 12 },
-  filterChip: { minHeight: 44, backgroundColor: COLORS.surface, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 18, borderWidth: 1, borderColor: COLORS.border, marginRight: 10, alignItems: 'center', justifyContent: 'center' },
-  filterChipActive: { backgroundColor: COLORS.brand, borderColor: COLORS.brand },
-  filterChipText: { color: COLORS.brand, fontWeight: '800' },
-  filterChipTextActive: { color: COLORS.surface },
-  statusFilters: { flexDirection: 'row', marginBottom: 18 },
-  statusFilterChip: { flex: 1, minHeight: 44, backgroundColor: COLORS.surface, borderRadius: 16, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.border, marginRight: 8 },
-  statusFilterActive: { backgroundColor: '#edf7d7', borderColor: '#d9ebaf' },
-  statusFilterText: { color: COLORS.textSecondary, fontWeight: '800', fontSize: 12 },
-  statusFilterTextActive: { color: COLORS.brand },
+  filterBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.surface, borderRadius: 18, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 10, paddingLeft: 14, paddingRight: 10, marginBottom: 16 },
+  filterCopy: { flex: 1, paddingRight: 12 },
+  filterSummary: { color: COLORS.brand, fontSize: 13, fontWeight: '900', marginBottom: 3 },
+  filterMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
+  filterButton: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#edf7d7', borderWidth: 1, borderColor: '#d9ebaf' },
+  filterBadge: { position: 'absolute', top: 6, right: 6, minWidth: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand },
+  filterBadgeText: { color: COLORS.surface, fontSize: 10, fontWeight: '900' },
   sectionTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   sectionTitle: { color: COLORS.brand, fontSize: 18, fontWeight: '900' },
   sectionMeta: { color: COLORS.muted, fontSize: 12, fontWeight: '800' },
@@ -465,16 +492,15 @@ const styles = StyleSheet.create({
   statusText: { color: COLORS.brand, fontSize: 11, fontWeight: '800' },
   planSubtitle: { color: COLORS.textSecondary, lineHeight: 19, marginBottom: 12 },
   metaRow: { marginBottom: 14 },
-  planWeek: { color: COLORS.muted, fontSize: 12, fontWeight: '700', marginBottom: 5 },
   readinessText: { fontSize: 12, fontWeight: '900' },
   readinessReady: { color: COLORS.success },
   readinessMissing: { color: COLORS.danger },
   footerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   planPrice: { color: COLORS.accent, fontSize: 17, fontWeight: '900' },
   controlsRow: { flexDirection: 'row', justifyContent: 'flex-end', flexWrap: 'wrap', flex: 1 },
-  actionButton: { minHeight: 40, backgroundColor: '#edf7d7', borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14, marginLeft: 8, alignItems: 'center', justifyContent: 'center' },
+  actionButton: { minHeight: 44, backgroundColor: '#edf7d7', borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14, marginLeft: 8, alignItems: 'center', justifyContent: 'center' },
   actionText: { color: COLORS.brand, fontWeight: '900', fontSize: 12 },
-  deleteButton: { minHeight: 40, backgroundColor: COLORS.dangerSubtle, borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14, marginLeft: 8, alignItems: 'center', justifyContent: 'center' },
+  deleteButton: { minHeight: 44, backgroundColor: COLORS.dangerSubtle, borderRadius: 16, paddingVertical: 10, paddingHorizontal: 14, marginLeft: 8, alignItems: 'center', justifyContent: 'center' },
   deleteActionText: { color: COLORS.danger, fontWeight: '900', fontSize: 12 },
   emptyState: { backgroundColor: COLORS.surface, borderRadius: 22, padding: 22, alignItems: 'center', marginBottom: 18, borderWidth: 1, borderColor: COLORS.border },
   emptyTitle: { color: COLORS.brand, fontSize: 18, fontWeight: '900', marginBottom: 8, textAlign: 'center' },
@@ -482,5 +508,22 @@ const styles = StyleSheet.create({
   quickActions: { width: '100%' },
   quickAction: { minHeight: 46, borderRadius: 16, backgroundColor: '#edf7d7', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   quickActionText: { color: COLORS.brand, fontWeight: '900' },
+  modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(10, 22, 14, 0.35)' },
+  filterSheet: { backgroundColor: COLORS.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28 },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 },
+  sheetTitle: { color: COLORS.brand, fontSize: 20, fontWeight: '900', marginBottom: 4 },
+  sheetMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
+  sheetCloseButton: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
+  sheetSectionLabel: { color: COLORS.brand, fontSize: 13, fontWeight: '900', marginBottom: 8, marginTop: 6 },
+  sheetOptions: { marginBottom: 10 },
+  sheetOption: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.surface, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: 14, marginBottom: 8 },
+  sheetOptionActive: { backgroundColor: '#edf7d7', borderColor: '#d9ebaf' },
+  sheetOptionText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '800' },
+  sheetOptionTextActive: { color: COLORS.brand },
+  sheetActions: { flexDirection: 'row', marginTop: 8 },
+  sheetSecondaryAction: { flex: 1, minHeight: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, marginRight: 10 },
+  sheetSecondaryText: { color: COLORS.brand, fontWeight: '900' },
+  sheetPrimaryAction: { flex: 1, minHeight: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand },
+  sheetPrimaryText: { color: COLORS.surface, fontWeight: '900' },
   pressed: { opacity: 0.75 },
 });

@@ -38,7 +38,7 @@ export default function AdminOrdersScreen({ onBack }) {
 
   const formatPrice = (value) => {
     const amount = Number(value);
-    return Number.isNaN(amount) ? '$--' : `$${amount.toFixed(2)}`;
+    return Number.isNaN(amount) ? '₱--' : `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
   };
 
   const getStatusColor = (status) => {
@@ -48,6 +48,8 @@ export default function AdminOrdersScreen({ onBack }) {
     if (s.includes('cancelled') || s.includes('failed')) return { bg: '#fbeaea', text: COLORS.danger };
     return { bg: '#f0f1ea', text: COLORS.textSecondary };
   };
+
+  const getOrderPlan = (order) => order.plan_snapshot || order.published_weekly_plans || {};
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
@@ -84,18 +86,30 @@ export default function AdminOrdersScreen({ onBack }) {
 
       {filtered.map((order) => (
         <View key={order.id} style={styles.orderCard}>
-          <View style={styles.orderHead}>
-            <AppText style={styles.orderId}>#{order.id.slice(0, 8).toUpperCase()}</AppText>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status).bg }]}>
-              <AppText style={[styles.statusText, { color: getStatusColor(order.status).text }]}>{order.status?.toUpperCase()}</AppText>
-            </View>
-          </View>
-          <AppText style={styles.orderPlan}>{order.published_weekly_plans?.name || '—'}</AppText>
-          <AppText style={styles.orderCategory}>{order.published_weekly_plans?.category}</AppText>
-          <View style={styles.orderFooter}>
-            <AppText style={styles.orderDate}>{formatDate(order.created_at)}</AppText>
-            <AppText style={styles.orderPrice}>{formatPrice(order.published_weekly_plans?.weekly_price)}</AppText>
-          </View>
+          {(() => {
+            const orderPlan = getOrderPlan(order);
+            const amountPaid = order.amount_paid ?? orderPlan.weekly_price;
+            return (
+              <>
+                <View style={styles.orderHead}>
+                  <AppText style={styles.orderId}>#{order.id.slice(0, 8).toUpperCase()}</AppText>
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status).bg }]}>
+                    <AppText style={[styles.statusText, { color: getStatusColor(order.status).text }]}>{order.status?.toUpperCase()}</AppText>
+                  </View>
+                </View>
+                <AppText style={styles.orderPlan}>{orderPlan.name || '—'}</AppText>
+                <AppText style={styles.orderCategory}>{orderPlan.category}</AppText>
+                <View style={styles.paymentMetaRow}>
+                  <AppText style={styles.paymentMeta}>{order.payment_method || 'GCash'}</AppText>
+                  <AppText style={styles.paymentMeta}>{order.delivery_time || '--:--'}</AppText>
+                </View>
+                <View style={styles.orderFooter}>
+                  <AppText style={styles.orderDate}>{formatDate(order.created_at)}</AppText>
+                  <AppText style={styles.orderPrice}>{formatPrice(amountPaid)}</AppText>
+                </View>
+              </>
+            );
+          })()}
         </View>
       ))}
     </ScrollView>
@@ -121,6 +135,8 @@ const styles = StyleSheet.create({
   statusText: { color: COLORS.brand, fontSize: 11, fontWeight: '800' },
   orderPlan: { color: COLORS.brand, fontSize: 18, fontWeight: '900', marginBottom: 4 },
   orderCategory: { color: COLORS.accent, fontWeight: '700', fontSize: 13, marginBottom: 10 },
+  paymentMetaRow: { flexDirection: 'row', marginBottom: 10 },
+  paymentMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '800', backgroundColor: '#f4f7ef', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 10, marginRight: 8 },
   orderFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   orderDate: { color: COLORS.muted, fontSize: 12 },
   orderPrice: { color: COLORS.brand, fontWeight: '800', fontSize: 15 },
