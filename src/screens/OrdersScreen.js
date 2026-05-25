@@ -27,6 +27,14 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
     return Number.isNaN(amount) ? '$--' : `$${amount.toFixed(2)}`;
   };
 
+  const getStatusColor = (status) => {
+    const s = (status || '').toLowerCase();
+    if (s.includes('paid') || s.includes('delivered')) return { bg: '#dff4da', text: COLORS.accent };
+    if (s.includes('pending')) return { bg: '#fff0db', text: '#d97706' };
+    if (s.includes('cancelled') || s.includes('failed')) return { bg: '#fbeaea', text: COLORS.danger };
+    return { bg: '#f0f1ea', text: COLORS.textSecondary };
+  };
+
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <HeaderBar title="My Orders" action={{ icon: 'settings', onPress: () => {} }} onBack={onBack} />
@@ -63,10 +71,15 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
                 <AppText style={styles.orderPrice}>{formatPrice(order.published_weekly_plans?.weekly_price)}</AppText>
               </View>
               <View style={styles.orderActions}>
-                <View style={styles.statusChip}>
-                  <AppText style={styles.statusText}>{order.status?.toUpperCase()}</AppText>
+                <View style={[styles.statusChip, { backgroundColor: getStatusColor(order.status).bg }]}>
+                  <AppText style={[styles.statusText, { color: getStatusColor(order.status).text }]}>
+                    {order.status?.toUpperCase() || 'UNKNOWN'}
+                  </AppText>
                 </View>
-                <Pressable style={styles.reviewButton} onPress={() => onOpenReview(order)}>
+                <Pressable 
+                  style={({ pressed }) => [styles.reviewButton, pressed && { opacity: 0.75 }]} 
+                  onPress={() => onOpenReview(order)}
+                >
                   <AppText style={styles.reviewButtonText}>Review</AppText>
                 </Pressable>
               </View>

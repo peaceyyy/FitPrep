@@ -70,7 +70,7 @@ export default function LoginScreen({ onNavigateRegister }) {
         </View>
 
         <Pressable 
-          style={styles.primaryButton} 
+          style={({ pressed }) => [styles.primaryButton, pressed && { opacity: 0.75 }]} 
           onPress={async () => {
             setLoading(true);
             setErrorMsg('');

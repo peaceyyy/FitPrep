@@ -72,10 +72,11 @@ export default function RegisterScreen({ onBack }) {
           {['cutting', 'bulking', 'maintain'].map((item, index) => (
             <Pressable
               key={item}
-              style={[
+              style={({ pressed }) => [
                 styles.goalButton,
                 index < 2 && styles.goalButtonSpacing,
                 goal === item && styles.goalButtonActive,
+                pressed && { opacity: 0.75 }
               ]}
               onPress={() => setGoal(item)}
             >
@@ -128,7 +129,7 @@ export default function RegisterScreen({ onBack }) {
         </View>
 
         <Pressable 
-          style={styles.primaryButton} 
+          style={({ pressed }) => [styles.primaryButton, pressed && { opacity: 0.75 }]} 
           onPress={async () => {
             if (password !== confirm) {
               setErrorMsg('Passwords do not match');

@@ -19,6 +19,7 @@ import AdminDashboardScreen from './screens/AdminDashboardScreen';
 import AdminOrdersScreen from './screens/AdminOrdersScreen';
 import AdminMealsScreen from './screens/AdminMealsScreen';
 import AdminMealForm from './screens/AdminMealForm';
+import AdminPlanFormScreen from './screens/AdminPlanFormScreen';
 import CheckoutScreen from './screens/CheckoutScreen';
 import ReviewScreen from './screens/ReviewScreen';
 import WeeklyPlanScreen from './screens/WeeklyPlanScreen';
@@ -47,6 +48,7 @@ export default function App() {
   });
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [adminMealPlanId, setAdminMealPlanId] = useState(null);
+  const [adminPlanFormConfig, setAdminPlanFormConfig] = useState({ initialPlan: null, defaults: null });
 
   const route = history[history.length - 1];
 
@@ -137,6 +139,14 @@ export default function App() {
     navigateTo('adminMealForm');
   };
 
+  const handleOpenAdminPlanForm = (config = {}) => {
+    setAdminPlanFormConfig({
+      initialPlan: config.initialPlan || null,
+      defaults: config.defaults || null,
+    });
+    navigateTo('adminPlanForm');
+  };
+
   const renderScreen = () => {
     if (!sessionLoaded || !fontsLoaded) {
       return (
@@ -169,7 +179,22 @@ export default function App() {
       case 'adminOrders':
         return <AdminOrdersScreen onBack={history.length > 1 ? navigateBack : null} />;
       case 'adminMeals':
-        return <AdminMealsScreen onCreateMeal={handleOpenAdminMealForm} onBack={history.length > 1 ? navigateBack : null} />;
+        return (
+          <AdminMealsScreen
+            onCreateMeal={handleOpenAdminMealForm}
+            onCreatePlan={(defaults) => handleOpenAdminPlanForm({ defaults })}
+            onEditPlan={(plan) => handleOpenAdminPlanForm({ initialPlan: plan })}
+            onBack={history.length > 1 ? navigateBack : null}
+          />
+        );
+      case 'adminPlanForm':
+        return (
+          <AdminPlanFormScreen
+            initialPlan={adminPlanFormConfig.initialPlan}
+            defaults={adminPlanFormConfig.defaults}
+            onBack={navigateBack}
+          />
+        );
       case 'adminMealForm':
         return <AdminMealForm initialPlanId={adminMealPlanId} onBack={navigateBack} />;
       default:

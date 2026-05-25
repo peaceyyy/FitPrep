@@ -93,7 +93,11 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
         {timeOptions.map((option) => (
           <Pressable
             key={option.label}
-            style={[styles.timeOption, selectedTime === option.label && styles.timeOptionActive]}
+            style={({ pressed }) => [
+              styles.timeOption, 
+              selectedTime === option.label && styles.timeOptionActive,
+              pressed && { opacity: 0.75 }
+            ]}
             onPress={() => setSelectedTime(option.label)}
           >
             <AppText style={styles.timeIcon}>{option.label === '6:00 AM' ? '🌅' : '☀️'}</AppText>
@@ -106,13 +110,21 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
       <AppText style={styles.sectionTitle}>Payment</AppText>
       <View style={styles.paymentRow}>
         <Pressable
-          style={[styles.paymentOption, paymentType === 'cash' && styles.paymentOptionActive]}
+          style={({ pressed }) => [
+            styles.paymentOption, 
+            paymentType === 'cash' && styles.paymentOptionActive,
+            pressed && { opacity: 0.75 }
+          ]}
           onPress={() => setPaymentType('cash')}
         >
           <AppText style={[styles.paymentLabel, paymentType === 'cash' && styles.paymentLabelActive]}>Cash on Delivery</AppText>
         </Pressable>
         <Pressable
-          style={[styles.paymentOption, paymentType === 'online' && styles.paymentOptionActive]}
+          style={({ pressed }) => [
+            styles.paymentOption, 
+            paymentType === 'online' && styles.paymentOptionActive,
+            pressed && { opacity: 0.75 }
+          ]}
           onPress={() => setPaymentType('online')}
         >
           <AppText style={[styles.paymentLabel, paymentType === 'online' && styles.paymentLabelActive]}>Online Payment</AppText>
@@ -124,7 +136,10 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
           <View style={styles.qrPlaceholder}>
             <AppText style={styles.qrLabel}>QR Code</AppText>
           </View>
-          <Pressable style={styles.attachButton} onPress={() => setProofAttached(true)}>
+          <Pressable 
+            style={({ pressed }) => [styles.attachButton, pressed && { opacity: 0.75 }]} 
+            onPress={() => setProofAttached(true)}
+          >
             <AppText style={styles.attachText}>{proofAttached ? 'Proof Attached' : 'Attach Proof of Payment'}</AppText>
           </Pressable>
         </View>
@@ -149,7 +164,15 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
         </View>
       )}
 
-      <Pressable style={[styles.confirmButton, !canConfirm && styles.confirmButtonDisabled]} onPress={handleConfirm} disabled={!canConfirm}>
+      <Pressable 
+        style={({ pressed }) => [
+          styles.confirmButton, 
+          !canConfirm && styles.confirmButtonDisabled,
+          pressed && canConfirm && { opacity: 0.75 }
+        ]} 
+        onPress={handleConfirm} 
+        disabled={!canConfirm}
+      >
         {loading
           ? <ActivityIndicator color="#ffffff" />
           : <AppText style={[styles.confirmLabel, !canConfirm && styles.confirmLabelDisabled]}>{canConfirm ? 'Confirm & Pay →' : 'Preorder Locked'}</AppText>

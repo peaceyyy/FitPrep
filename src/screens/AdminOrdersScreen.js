@@ -41,6 +41,14 @@ export default function AdminOrdersScreen({ onBack }) {
     return Number.isNaN(amount) ? '$--' : `$${amount.toFixed(2)}`;
   };
 
+  const getStatusColor = (status) => {
+    const s = (status || '').toLowerCase();
+    if (s.includes('paid') || s.includes('delivered')) return { bg: '#dff4da', text: COLORS.accent };
+    if (s.includes('pending')) return { bg: '#fff0db', text: '#d97706' };
+    if (s.includes('cancelled') || s.includes('failed')) return { bg: '#fbeaea', text: COLORS.danger };
+    return { bg: '#f0f1ea', text: COLORS.textSecondary };
+  };
+
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <HeaderBar title="Order Management" action={{ icon: 'refresh-cw', onPress: () => {} }} onBack={onBack} />
@@ -58,7 +66,7 @@ export default function AdminOrdersScreen({ onBack }) {
         {filterOptions.map((option) => (
           <Pressable
             key={option}
-            style={[styles.filterChip, filter === option && styles.filterChipActive]}
+            style={({ pressed }) => [styles.filterChip, filter === option && styles.filterChipActive, pressed && { opacity: 0.75 }]}
             onPress={() => setFilter(option)}
           >
             <AppText style={[styles.filterLabel, filter === option && styles.filterLabelActive]}>{option}</AppText>
@@ -78,8 +86,8 @@ export default function AdminOrdersScreen({ onBack }) {
         <View key={order.id} style={styles.orderCard}>
           <View style={styles.orderHead}>
             <AppText style={styles.orderId}>#{order.id.slice(0, 8).toUpperCase()}</AppText>
-            <View style={styles.statusBadge}>
-              <AppText style={styles.statusText}>{order.status?.toUpperCase()}</AppText>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status).bg }]}>
+              <AppText style={[styles.statusText, { color: getStatusColor(order.status).text }]}>{order.status?.toUpperCase()}</AppText>
             </View>
           </View>
           <AppText style={styles.orderPlan}>{order.published_weekly_plans?.name || '—'}</AppText>
