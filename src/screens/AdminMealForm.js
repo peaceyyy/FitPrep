@@ -131,7 +131,7 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Add Meal" onBack={onBack} />
+      <HeaderBar title="Manage Meals" onBack={onBack} />
 
       <View style={styles.heroCard}>
         <AppText style={styles.heroCategory}>{activePlan?.category?.toUpperCase() || 'PLAN'}</AppText>
