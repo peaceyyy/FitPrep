@@ -2,9 +2,11 @@ import AppText from '../components/AppText';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View, Pressable } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
 
 export default function EditProfileScreen({ section, user, onSave, onBack }) {
+  const { colors } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
   const [name, setName] = useState(user.name);
   const [contactNumber, setContactNumber] = useState(user.contactNumber || '');
   const [address, setAddress] = useState(user.address || '');
@@ -39,7 +41,7 @@ export default function EditProfileScreen({ section, user, onSave, onBack }) {
               value={name}
               onChangeText={setName}
               placeholder="Alex Johnson"
-              placeholderTextColor={COLORS.textTertiary}
+              placeholderTextColor={colors.textTertiary}
             />
 
             <AppText style={styles.fieldLabel}>Email Address</AppText>
@@ -54,7 +56,7 @@ export default function EditProfileScreen({ section, user, onSave, onBack }) {
               value={contactNumber}
               onChangeText={setContactNumber}
               placeholder="09XX XXX XXXX"
-              placeholderTextColor={COLORS.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               keyboardType="phone-pad"
             />
 
@@ -64,7 +66,7 @@ export default function EditProfileScreen({ section, user, onSave, onBack }) {
               value={address}
               onChangeText={setAddress}
               placeholder="Enter your delivery address"
-              placeholderTextColor={COLORS.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               multiline
               numberOfLines={4}
             />
@@ -83,54 +85,54 @@ export default function EditProfileScreen({ section, user, onSave, onBack }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   root: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   content: {
     padding: 20,
     paddingBottom: 120,
   },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     padding: 22,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   label: {
-    color: COLORS.accent,
+    color: colors.accent,
     fontSize: 12,
     fontWeight: '700',
     marginBottom: 14,
   },
   fieldLabel: {
-    color: COLORS.brand,
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
     marginTop: 14,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: COLORS.brand,
+    color: colors.textPrimary,
   },
   readonlyField: {
-    backgroundColor: '#f4f7ef',
+    backgroundColor: colors.surfaceGreen,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
   readonlyText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -139,19 +141,19 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   helpText: {
-    color: COLORS.muted,
+    color: colors.muted,
     marginTop: 12,
     lineHeight: 20,
   },
   saveButton: {
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 22,
   },
   saveText: {
-    color: COLORS.surface,
+    color: colors.surface,
     fontWeight: '800',
     fontSize: 16,
   },

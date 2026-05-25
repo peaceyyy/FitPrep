@@ -191,9 +191,9 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
           </View>
           
           <View style={styles.paymentDetails}>
-            <AppText style={styles.detailsLabel}>Account Name:</AppText>
+            <AppText style={styles.detailsLabel}>Payment Receiver:</AppText>
             <AppText style={styles.detailsValue}>PrepMate Food Services</AppText>
-            <AppText style={styles.detailsLabel}>GCash No:</AppText>
+            <AppText style={styles.detailsLabel}>Customer GCash:</AppText>
             <AppText style={styles.detailsValue}>{user?.contactNumber || 'Not provided'}</AppText>
             <AppText style={styles.detailsLabel}>Payment Status:</AppText>
             <AppText style={styles.detailsValue}>Mock paid on preorder</AppText>

@@ -3,13 +3,13 @@ import React, { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
   Pressable,
   TouchableOpacity,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import BrandMark from '../components/BrandMark';
 import { COLORS } from '../theme';
 import { supabase } from '../lib/supabaseClient';
 
@@ -23,9 +23,7 @@ export default function LoginScreen({ onNavigateRegister }) {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.card}>
-        <View style={styles.logoBadge}>
-          <AppText style={styles.logoIcon}>🍽️</AppText>
-        </View>
+        <BrandMark size={86} style={styles.logoBadge} />
 
         <AppText style={styles.brandTitle}>FitFood</AppText>
         <AppText style={styles.brandSubtitle}>ELITE FUELING</AppText>
@@ -134,18 +132,8 @@ const styles = StyleSheet.create({
     },
   },
   logoBadge: {
-    width: 86,
-    height: 86,
-    backgroundColor: COLORS.brand,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
     alignSelf: 'center',
     marginBottom: 16,
-  },
-  logoIcon: {
-    fontSize: 34,
-    color: COLORS.highlightBright,
   },
   brandTitle: {
     color: COLORS.brand,

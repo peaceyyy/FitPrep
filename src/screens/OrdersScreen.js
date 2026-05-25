@@ -2,10 +2,11 @@ import AppText from '../components/AppText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View, Pressable, ActivityIndicator } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
+import { usePlans } from '../context/PlansContext';
 import { DELIVERY_STATUSES } from '../services/deliveryStatusService';
 import { fetchMyDailyDeliveries } from '../services/deliveriesService';
-import { getWeekEndDate } from '../services/plansService';
+import { formatWeekRange, getWeekEndDate } from '../services/plansService';
 
 const isPastSunday = (weekStartDate) => {
   if (!weekStartDate) return false;
@@ -13,7 +14,21 @@ const isPastSunday = (weekStartDate) => {
   return new Date() > endDate;
 };
 
+const getOrderPlan = (order = {}) => order.plan_snapshot || order.published_weekly_plans || {};
+
+const getOrderWeekStart = (order = {}) => getOrderPlan(order).week_start_date || '';
+
+const isCurrentOrFutureOrder = (order) => {
+  const weekStartDate = getOrderWeekStart(order);
+  if (!weekStartDate) return false;
+  const weekEnd = new Date(`${getWeekEndDate(weekStartDate)}T23:59:59`);
+  return weekEnd >= new Date();
+};
+
 export default function OrdersScreen({ onOpenReview, onBack }) {
+  const { colors, isDark } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+  const { orders, ordersLoading, loadOrders } = usePlans();
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,7 +36,10 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
   const loadDeliveries = useCallback(async () => {
     setLoading(true);
     setError('');
-    const { data, error: fetchError } = await fetchMyDailyDeliveries();
+    const [{ data, error: fetchError }] = await Promise.all([
+      fetchMyDailyDeliveries(),
+      loadOrders(),
+    ]);
     if (fetchError) {
       setDeliveries([]);
       setError(fetchError.message || 'Could not load your deliveries.');
@@ -29,7 +47,7 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
       setDeliveries(data || []);
     }
     setLoading(false);
-  }, []);
+  }, [loadOrders]);
 
   useEffect(() => {
     loadDeliveries();
@@ -67,6 +85,16 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
     return { active, delivered, orders: orderGroups.length };
   }, [deliveries, orderGroups.length]);
 
+  const upcomingPreorder = useMemo(() => {
+    if (!Array.isArray(orders) || orders.length === 0) return null;
+    const deliveryOrderIds = new Set(orderGroups.map((group) => group.id));
+
+    return orders
+      .filter((order) => !deliveryOrderIds.has(order.id))
+      .filter(isCurrentOrFutureOrder)
+      .sort((a, b) => getOrderWeekStart(a).localeCompare(getOrderWeekStart(b)))[0] || null;
+  }, [orderGroups, orders]);
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     return new Date(`${dateStr}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
@@ -79,10 +107,10 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
 
   const getStatusColor = (status) => {
     const s = (status || '').toLowerCase();
-    if (s.includes('paid') || s.includes('delivered')) return { bg: '#dff4da', text: COLORS.accent };
-    if (s.includes('pending')) return { bg: '#fff0db', text: '#d97706' };
-    if (s.includes('cancelled') || s.includes('failed')) return { bg: '#fbeaea', text: COLORS.danger };
-    return { bg: '#f0f1ea', text: COLORS.textSecondary };
+    if (s.includes('paid') || s.includes('delivered')) return { bg: colors.surfaceGreen, text: colors.accent };
+    if (s.includes('pending')) return { bg: colors.highlightSubtle, text: '#d97706' };
+    if (s.includes('cancelled') || s.includes('failed')) return { bg: colors.dangerSubtle, text: colors.danger };
+    return { bg: colors.surfaceGreen, text: colors.textSecondary };
   };
 
   const renderDelivery = (delivery) => {
@@ -107,7 +135,7 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <HeaderBar title="My Deliveries" action={{ icon: 'refresh-cw', onPress: loadDeliveries }} onBack={onBack} />
 
-      {loading && <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 24 }} />}
+      {loading && <ActivityIndicator color={colors.accent} style={{ marginVertical: 24 }} />}
 
       {!loading && !!error && (
         <View style={styles.emptyState}>
@@ -119,7 +147,16 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
         </View>
       )}
 
-      {!loading && !error && orderGroups.length === 0 && (
+      {!loading && !ordersLoading && !error && orderGroups.length === 0 && upcomingPreorder && (
+        <View style={styles.emptyState}>
+          <AppText style={styles.emptyStateTitle}>Preorder confirmed</AppText>
+          <AppText style={styles.emptyStateText}>
+            {getOrderPlan(upcomingPreorder).name || 'Your weekly plan'} is locked for {formatWeekRange(getOrderWeekStart(upcomingPreorder))}. Deliveries will appear here once that week starts.
+          </AppText>
+        </View>
+      )}
+
+      {!loading && !ordersLoading && !error && orderGroups.length === 0 && !upcomingPreorder && (
         <View style={styles.emptyState}>
           <AppText style={styles.emptyStateTitle}>No orders yet</AppText>
           <AppText style={styles.emptyStateText}>Browse the weekly plans and place your first preorder!</AppText>
@@ -148,7 +185,7 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
             <View key={group.id} style={styles.orderCard}>
               <View style={styles.orderHeader}>
                 <View style={styles.orderBody}>
-                  <AppText style={styles.orderTitle}>{group.plan.name || 'Plan'}</AppText>
+                  <AppText style={styles.orderTitle} numberOfLines={2}>{group.plan.name || 'Plan'}</AppText>
                   <AppText style={styles.orderDate}>{group.plan.category || 'Meal plan'} - Order #{group.id?.slice(0, 8)}</AppText>
                 </View>
                 <AppText style={styles.orderPrice}>{formatPrice(group.order.amount_paid ?? group.plan.weekly_price)}</AppText>
@@ -176,7 +213,7 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
                 </Pressable>
               ) : (
                 <View style={[styles.reviewButton, styles.reviewButtonDisabled]}>
-                  <AppText style={[styles.reviewButtonText, { color: COLORS.muted }]}>Review later</AppText>
+                  <AppText style={[styles.reviewButtonText, { color: colors.muted }]}>Review later</AppText>
                 </View>
               )}
             </View>
@@ -184,17 +221,19 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
         </>
       )}
 
-      <View style={styles.ctaCard}>
-        <AppText style={styles.ctaHeading}>Ready for next week?</AppText>
-        <AppText style={styles.ctaDescription}>New plans open for preorder as soon as they are published.</AppText>
-      </View>
+      {!upcomingPreorder && (
+        <View style={styles.ctaCard}>
+          <AppText style={styles.ctaHeading}>Ready for next week?</AppText>
+          <AppText style={styles.ctaDescription}>New plans open for preorder as soon as they are published.</AppText>
+        </View>
+      )}
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, isDark) => StyleSheet.create({
   root: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   content: {
     padding: 20,
@@ -207,68 +246,69 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginRight: 8,
   },
   summaryActive: {
-    backgroundColor: '#ebf5c7',
-    borderColor: '#d8ed9a',
+    backgroundColor: colors.highlightSubtle,
+    borderColor: colors.highlight,
   },
   summaryLabel: {
-    color: COLORS.muted,
+    color: colors.muted,
     fontSize: 12,
     marginBottom: 8,
   },
   summaryValue: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 26,
     fontWeight: '800',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.brand,
+    color: colors.brand,
     marginBottom: 14,
   },
   orderCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 24,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   orderHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 },
   orderBody: {
     flex: 1,
+    flexShrink: 1,
     paddingRight: 12,
   },
   orderTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: COLORS.brand,
+    color: colors.brand,
     marginBottom: 4,
   },
   orderDate: {
-    color: COLORS.muted,
+    color: colors.muted,
     fontSize: 13,
     marginBottom: 6,
   },
   orderPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.brand,
+    color: colors.brand,
   },
   paymentRow: { flexDirection: 'row', marginBottom: 12 },
-  paymentPill: { backgroundColor: '#f4f7ef', borderRadius: 999, paddingVertical: 7, paddingHorizontal: 11, marginRight: 8 },
-  paymentText: { color: COLORS.brand, fontSize: 12, fontWeight: '800' },
+  paymentPill: { backgroundColor: colors.surfaceGreen, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 11, marginRight: 8 },
+  paymentText: { color: colors.brand, fontSize: 12, fontWeight: '800' },
   deliveryList: {
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: colors.border,
     paddingTop: 8,
     marginBottom: 12,
   },
@@ -280,76 +320,76 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   deliveryDate: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: '800',
     marginBottom: 2,
   },
   deliverySlot: {
-    color: COLORS.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: '700',
   },
   statusChip: {
-    backgroundColor: '#e9f7dd',
+    backgroundColor: colors.surfaceGreen,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginBottom: 6,
   },
   statusText: {
-    color: COLORS.accent,
+    color: colors.accent,
     fontWeight: '700',
     fontSize: 11,
   },
   reviewButton: {
-    backgroundColor: COLORS.highlight,
+    backgroundColor: colors.highlight,
     borderRadius: 16,
     paddingVertical: 10,
     paddingHorizontal: 14,
     alignItems: 'center',
   },
   reviewButtonDisabled: {
-    backgroundColor: '#e2e6d9',
+    backgroundColor: colors.surfaceGreen,
   },
   reviewButtonText: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: '800',
   },
   ctaCard: {
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
     borderRadius: 26,
     padding: 24,
     marginTop: 8,
   },
   ctaHeading: {
-    color: COLORS.surface,
+    color: isDark ? colors.background : colors.surface,
     fontSize: 20,
     fontWeight: '800',
     marginBottom: 10,
   },
   ctaDescription: {
-    color: '#dde8d3',
+    color: isDark ? colors.surfaceGreen : colors.textSecondary,
     fontSize: 14,
     marginBottom: 18,
     lineHeight: 20,
   },
   emptyState: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 22,
     padding: 28,
     alignItems: 'center',
     marginBottom: 22,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.brand,
+    color: colors.brand,
     marginBottom: 8,
   },
   emptyStateText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -360,10 +400,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
   },
   retryButtonText: {
-    color: COLORS.surface,
+    color: colors.surface,
     fontWeight: '800',
   },
 });

@@ -1,21 +1,19 @@
-import AppText from '../components/AppText';
-import React from 'react';
-import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
-import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
+import AppText from "../components/AppText";
+import React from "react";
+import { ScrollView, StyleSheet, View, Pressable } from "react-native";
+import HeaderBar from "../components/HeaderBar";
+import { COLORS } from "../theme";
 
 const recent = [
   { id: 1, text: 'New Meal Plan Created: "High-Protein Summer Bulk"' },
-  { id: 2, text: 'New VIP Subscriber: James Wilson' },
-  { id: 3, text: 'Order #ORD-8921 marked Delivered' },
+  { id: 2, text: "New VIP Subscriber: James Wilson" },
+  { id: 3, text: "Order #ORD-8921 marked Delivered" },
 ];
 
 export default function AdminOverviewScreen({ onCreateMeal }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <HeaderBar title="Dashboard Overview" />
-
-      <AppText style={styles.sectionTitle}>Operational Snapshot</AppText>
 
       <View style={styles.cardRow}>
         <View style={styles.statCard}>
@@ -31,7 +29,11 @@ export default function AdminOverviewScreen({ onCreateMeal }) {
       <View style={styles.revenueCard}>
         <AppText style={styles.statLabel}>Total Revenue</AppText>
         <AppText style={styles.revenueValue}>₱124,510</AppText>
-        <View style={styles.graphPlaceholder}><AppText style={styles.graphText}>Use the main Dashboard for live demo totals.</AppText></View>
+        <View style={styles.graphPlaceholder}>
+          <AppText style={styles.graphText}>
+            Use the main Dashboard for live demo totals.
+          </AppText>
+        </View>
       </View>
 
       <View style={styles.quickActions}>
@@ -53,18 +55,65 @@ export default function AdminOverviewScreen({ onCreateMeal }) {
 const styles = StyleSheet.create({
   root: { backgroundColor: COLORS.background },
   content: { padding: 20, paddingBottom: 120 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: COLORS.brand, marginBottom: 12 },
-  cardRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
-  statCard: { flex: 1, backgroundColor: COLORS.surface, padding: 16, borderRadius: 18, marginRight: 12, borderWidth: 1, borderColor: COLORS.border },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: COLORS.brand,
+    marginBottom: 12,
+  },
+  cardRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    padding: 16,
+    borderRadius: 18,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
   statLabel: { color: COLORS.muted, fontSize: 12, marginBottom: 8 },
-  statValue: { fontSize: 20, fontWeight: '800', color: COLORS.brand },
-  revenueCard: { backgroundColor: COLORS.surface, padding: 16, borderRadius: 18, borderWidth: 1, borderColor: COLORS.border, marginBottom: 14 },
-  revenueValue: { fontSize: 22, fontWeight: '900', color: COLORS.brand, marginBottom: 10 },
-  graphPlaceholder: { height: 100, borderRadius: 10, backgroundColor: '#eef4df', alignItems: 'center', justifyContent: 'center' },
+  statValue: { fontSize: 20, fontWeight: "800", color: COLORS.brand },
+  revenueCard: {
+    backgroundColor: COLORS.surface,
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 14,
+  },
+  revenueValue: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: COLORS.brand,
+    marginBottom: 10,
+  },
+  graphPlaceholder: {
+    height: 100,
+    borderRadius: 10,
+    backgroundColor: "#eef4df",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   graphText: { color: COLORS.muted },
   quickActions: { marginBottom: 18 },
-  createButton: { backgroundColor: COLORS.brand, paddingVertical: 14, borderRadius: 18, alignItems: 'center' },
-  createButtonText: { color: COLORS.surface, fontWeight: '800' },
-  activityRow: { backgroundColor: COLORS.surface, padding: 12, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
+  createButton: {
+    backgroundColor: COLORS.brand,
+    paddingVertical: 14,
+    borderRadius: 18,
+    alignItems: "center",
+  },
+  createButtonText: { color: COLORS.surface, fontWeight: "800" },
+  activityRow: {
+    backgroundColor: COLORS.surface,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
   activityText: { color: COLORS.textSecondary },
 });

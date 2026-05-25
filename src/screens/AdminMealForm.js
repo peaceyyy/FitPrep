@@ -10,6 +10,54 @@ import { normalizeDayLabel, MEAL_TYPES } from '../services/plansService';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+function normalizeNumberText(value) {
+  const parsed = parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed < 0) return '0';
+  return String(parsed);
+}
+
+function stepNumberText(value, delta) {
+  const current = parseInt(value, 10);
+  return String(Math.max(0, (Number.isNaN(current) ? 0 : current) + delta));
+}
+
+function MacroStepper({ label, value, onChangeText, step = 1 }) {
+  return (
+    <View style={styles.macroField}>
+      <AppText style={styles.fieldLabel}>{label}</AppText>
+      <View style={styles.stepperInput}>
+        <TextInput
+          style={styles.stepperTextInput}
+          value={value}
+          onChangeText={(text) => onChangeText(text.replace(/[^0-9]/g, ''))}
+          onBlur={() => onChangeText(normalizeNumberText(value))}
+          keyboardType="numeric"
+          placeholder="0"
+          placeholderTextColor={COLORS.textTertiary}
+        />
+        <View style={styles.stepperControls}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Increase ${label}`}
+            style={({ pressed }) => [styles.stepperButton, pressed && styles.pressed]}
+            onPress={() => onChangeText(stepNumberText(value, step))}
+          >
+            <Feather name="chevron-up" size={16} color={COLORS.brand} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Decrease ${label}`}
+            style={({ pressed }) => [styles.stepperButton, styles.stepperButtonBottom, pressed && styles.pressed]}
+            onPress={() => onChangeText(stepNumberText(value, -step))}
+          >
+            <Feather name="chevron-down" size={16} color={COLORS.brand} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 export default function AdminMealForm({ initialPlanId, onBack }) {
   const { loadMealsForPlan, loadPlans, meals, plans } = usePlans();
   const [selectedPlanId, setSelectedPlanId] = useState(initialPlanId || plans?.[0]?.id || null);
@@ -250,25 +298,13 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
               />
 
               <View style={styles.macroRow}>
-                <View style={styles.macroField}>
-                  <AppText style={styles.fieldLabel}>Calories</AppText>
-                  <TextInput style={styles.input} value={calories} onChangeText={setCalories} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textTertiary} />
-                </View>
-                <View style={styles.macroField}>
-                  <AppText style={styles.fieldLabel}>Protein (g)</AppText>
-                  <TextInput style={styles.input} value={protein} onChangeText={setProtein} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textTertiary} />
-                </View>
+                <MacroStepper label="Calories" value={calories} onChangeText={setCalories} step={10} />
+                <MacroStepper label="Protein (g)" value={protein} onChangeText={setProtein} />
               </View>
 
               <View style={styles.macroRow}>
-                <View style={styles.macroField}>
-                  <AppText style={styles.fieldLabel}>Carbs (g)</AppText>
-                  <TextInput style={styles.input} value={carbs} onChangeText={setCarbs} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textTertiary} />
-                </View>
-                <View style={styles.macroField}>
-                  <AppText style={styles.fieldLabel}>Fats (g)</AppText>
-                  <TextInput style={styles.input} value={fats} onChangeText={setFats} keyboardType="numeric" placeholder="0" placeholderTextColor={COLORS.textTertiary} />
-                </View>
+                <MacroStepper label="Carbs (g)" value={carbs} onChangeText={setCarbs} />
+                <MacroStepper label="Fats (g)" value={fats} onChangeText={setFats} />
               </View>
 
               <Pressable style={[styles.saveButton, loading && { opacity: 0.6 }]} onPress={handleSave} disabled={loading}>
@@ -314,6 +350,12 @@ const styles = StyleSheet.create({
   textarea: { minHeight: 90, textAlignVertical: 'top' },
   macroRow: { flexDirection: 'row', gap: 12 },
   macroField: { flex: 1 },
+  stepperInput: { minHeight: 54, flexDirection: 'row', alignItems: 'stretch', backgroundColor: COLORS.inputBg, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden' },
+  stepperTextInput: { flex: 1, paddingHorizontal: 14, color: COLORS.brand, fontSize: 16, fontWeight: '800' },
+  stepperControls: { width: 40, borderLeftWidth: 1, borderLeftColor: COLORS.border },
+  stepperButton: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#edf7d7' },
+  stepperButtonBottom: { borderTopWidth: 1, borderTopColor: COLORS.border },
+  pressed: { opacity: 0.75 },
   saveButton: { backgroundColor: COLORS.brand, paddingVertical: 16, borderRadius: 20, alignItems: 'center', marginTop: 20 },
   saveText: { color: COLORS.surface, fontWeight: '800', fontSize: 16 },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(10, 22, 14, 0.35)' },

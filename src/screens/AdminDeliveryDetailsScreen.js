@@ -73,6 +73,9 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
             const isActive = item.current_status === status;
             // Only disable if it's updating, or if it's restricted for the future. We don't disable active states anymore.
             const disabled = isUpdating || disableForFuture;
+            
+            // Abbreviate "Out for Delivery" to fit 4 buttons nicely
+            const displayText = status === DELIVERY_STATUSES.OUT_FOR_DELIVERY ? 'Out' : status;
 
             return (
               <Pressable
@@ -90,12 +93,16 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
                   handleStatusUpdate(item, newStatus);
                 }}
               >
-                <AppText style={[
-                  styles.statusActionText, 
-                  isActive && styles.statusActionTextActive,
-                  disableForFuture && styles.statusActionTextDisabled
-                ]}>
-                  {status}
+                <AppText
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  style={[
+                    styles.statusActionText, 
+                    isActive && styles.statusActionTextActive,
+                    disableForFuture && styles.statusActionTextDisabled
+                  ]}
+                >
+                  {displayText}
                 </AppText>
               </Pressable>
             );
@@ -162,11 +169,11 @@ const styles = StyleSheet.create({
   timeSlot: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '700' },
   statusBadge: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: '#dff4da' },
   statusText: { color: COLORS.brand, fontSize: 11, fontWeight: '800' },
-  actionsRow: { flexDirection: 'row', flexWrap: 'wrap' },
-  statusAction: { minHeight: 44, flex: 1, minWidth: '30%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f4f7ef', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 8, marginRight: 8, marginTop: 8, borderWidth: 1, borderColor: COLORS.border },
+  actionsRow: { flexDirection: 'row', gap: 6, marginTop: 12 },
+  statusAction: { minHeight: 40, flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f4f7ef', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 4, borderWidth: 1, borderColor: COLORS.border },
   statusActionActive: { backgroundColor: COLORS.brand, borderColor: COLORS.brand },
   statusActionDisabled: { backgroundColor: '#f0f1ea', borderColor: COLORS.border, opacity: 0.5 },
-  statusActionText: { color: COLORS.brand, fontSize: 11, fontWeight: '800', textAlign: 'center' },
+  statusActionText: { color: COLORS.brand, fontSize: 10, fontWeight: '800', textAlign: 'center' },
   statusActionTextActive: { color: COLORS.surface },
   statusActionTextDisabled: { color: COLORS.muted },
   emptyState: { backgroundColor: COLORS.surface, borderRadius: 18, padding: 18, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },

@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
   Pressable,
@@ -11,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import BrandMark from '../components/BrandMark';
 import { COLORS } from '../theme';
 import { supabase } from '../lib/supabaseClient';
 
@@ -37,7 +37,7 @@ export default function RegisterScreen({ onBack }) {
             <AppText style={styles.backArrow}>←</AppText>
           </Pressable>
           <AppText style={styles.brandTitle}>FitFood</AppText>
-          <View style={styles.iconPlaceholder} />
+          <BrandMark size={34} />
         </View>
 
         <AppText style={styles.heading}>Create Account</AppText>
@@ -250,10 +250,6 @@ const styles = StyleSheet.create({
   backArrow: {
     fontSize: 18,
     color: COLORS.brand,
-  },
-  iconPlaceholder: {
-    width: 34,
-    height: 34,
   },
   brandTitle: {
     color: COLORS.brand,

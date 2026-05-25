@@ -32,9 +32,12 @@ import AdminBottomNav from './components/AdminBottomNav';
 import { COLORS } from './theme';
 import { supabase } from './lib/supabaseClient';
 import { PlansProvider } from './context/PlansContext';
+import { ThemeProvider, ThemeContext } from './context/ThemeContext';
 import { profilesService } from './services/profilesService';
 
-export default function App() {
+function AppContent() {
+  const { colors, isDark } = React.useContext(ThemeContext);
+  
   const [fontsLoaded] = useFonts({
     PlusJakartaSans: PlusJakartaSans_400Regular,
     PlusJakartaSans_600SemiBold,
@@ -226,7 +229,7 @@ export default function App() {
       case 'register':
         return <RegisterScreen onBack={navigateBack} />;
       case 'home':
-        return <HomeScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onBack={history.length > 1 ? navigateBack : null} />;
+        return <HomeScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onNavigateToPlans={() => resetTo('plans')} onBack={history.length > 1 ? navigateBack : null} />;
       case 'plans':
         return <PlansScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} onBack={history.length > 1 ? navigateBack : null} />;
       case 'orders':
@@ -307,8 +310,8 @@ export default function App() {
 
   return (
     <PlansProvider>
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="dark" />
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+        <StatusBar style={isDark ? "light" : "dark"} />
         <View style={styles.container}>
           <View style={styles.screenContent}>{renderScreen()}</View>
           {['home', 'plans', 'orders', 'profile', 'weeklyPlan'].includes(route) && (
@@ -323,10 +326,17 @@ export default function App() {
   );
 }
 
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   container: {
     flex: 1,

@@ -30,6 +30,7 @@ export default function WeeklyPlanScreen({ onBack, onPreorder }) {
     weekRangeLabel,
   } = usePlans();
   const [selectedDay, setSelectedDay] = useState('Mon');
+  const [expandedMealId, setExpandedMealId] = useState(null);
 
   const dayMeals = useMemo(() => (
     selectedPlanMeals.filter((meal) => normalizeDayLabel(meal.day_of_week) === selectedDay)
@@ -123,8 +124,19 @@ export default function WeeklyPlanScreen({ onBack, onPreorder }) {
             </View>
           )}
 
+          {!mealsLoading && sortedDayMeals.length > 0 && (
+            <AppText style={styles.detailHint}>Long press a meal to show details.</AppText>
+          )}
+
           {sortedDayMeals.map((meal) => (
-            <View key={meal.id} style={styles.mealCard}>
+            <Pressable
+              key={meal.id}
+              accessibilityRole="button"
+              accessibilityHint="Long press to show or hide meal details"
+              delayLongPress={220}
+              style={({ pressed }) => [styles.mealCard, pressed && styles.mealCardPressed]}
+              onLongPress={() => setExpandedMealId((current) => (current === meal.id ? null : meal.id))}
+            >
               <View style={styles.mealHeader}>
                 <View style={{ flexDirection: 'row', gap: 6 }}>
                   <View style={styles.mealDayBadge}>
@@ -136,15 +148,22 @@ export default function WeeklyPlanScreen({ onBack, onPreorder }) {
                     </AppText>
                   </View>
                 </View>
-                <AppText style={styles.mealCalories}>{meal.calories || 0} kcal</AppText>
+                <View style={styles.mealRightMeta}>
+                  <AppText style={styles.mealCalories}>{meal.calories || 0} kcal</AppText>
+                  <AppText style={styles.mealExpandText}>{expandedMealId === meal.id ? 'Hide' : 'Hold'}</AppText>
+                </View>
               </View>
               <AppText style={styles.mealTitle}>{meal.meal_name}</AppText>
-              {!!meal.description && <AppText style={styles.mealDescription}>{meal.description}</AppText>}
               <AppText style={styles.nutritionText}>{formatMacros(meal)}</AppText>
-              <View style={styles.nutritionTrack}>
-                <View style={[styles.nutritionFill, { width: `${Math.min(100, ((meal.protein_g || 0) / 60) * 100)}%` }]} />
-              </View>
-            </View>
+              {expandedMealId === meal.id && (
+                <>
+                  {!!meal.description && <AppText style={styles.mealDescription}>{meal.description}</AppText>}
+                  <View style={styles.nutritionTrack}>
+                    <View style={[styles.nutritionFill, { width: `${Math.min(100, ((meal.protein_g || 0) / 60) * 100)}%` }]} />
+                  </View>
+                </>
+              )}
+            </Pressable>
           ))}
 
           <Pressable
@@ -318,6 +337,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  mealCardPressed: {
+    opacity: 0.8,
+  },
+  detailHint: {
+    color: COLORS.muted,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: -6,
+    marginBottom: 10,
+  },
   mealHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -340,6 +369,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '900',
   },
+  mealRightMeta: {
+    alignItems: 'flex-end',
+  },
+  mealExpandText: {
+    color: COLORS.muted,
+    fontSize: 10,
+    fontWeight: '900',
+    marginTop: 3,
+    textTransform: 'uppercase',
+  },
   mealTitle: {
     fontSize: 19,
     fontWeight: '900',
@@ -349,6 +388,7 @@ const styles = StyleSheet.create({
   mealDescription: {
     color: COLORS.textSecondary,
     lineHeight: 20,
+    marginTop: 2,
     marginBottom: 12,
   },
   nutritionText: {

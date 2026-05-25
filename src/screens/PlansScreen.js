@@ -2,8 +2,8 @@ import AppText from '../components/AppText';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
 import { usePlans } from '../context/PlansContext';
+import { useTheme } from '../context/useTheme';
 import {
   PLAN_CATEGORIES,
   normalizeCategory,
@@ -37,6 +37,8 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
     subscriptionForWeek,
     weekRangeLabel,
   } = usePlans();
+  const { colors } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
 
   const isCurrentWeek = browsingWeekStartDate === currentWeekStartDate;
   const subscriptionPlan = subscriptionForWeek?.published_weekly_plans;
@@ -122,7 +124,7 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
         })}
       </View>
 
-      {loading && <ActivityIndicator color={COLORS.accent} style={styles.loader} />}
+      {loading && <ActivityIndicator color={colors.accent} style={styles.loader} />}
       {!!error && <AppText style={styles.errorText}>{error}</AppText>}
 
       {!loading && !hasPlansThisWeek && !error && (
@@ -142,7 +144,7 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
       {!loading && selectedPlan && (
         <View style={styles.planPanel}>
           <View style={styles.planTopRow}>
-            <View>
+            <View style={{ flex: 1, flexShrink: 1, paddingRight: 12 }}>
               <AppText style={styles.planCategory}>{selectedPlan.category}</AppText>
               <AppText style={styles.planTitle}>{selectedPlan.name}</AppText>
             </View>
@@ -177,9 +179,9 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   root: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   content: {
     padding: 20,
@@ -189,13 +191,13 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   greeting: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 26,
     fontWeight: '900',
     marginBottom: 6,
   },
   description: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -210,20 +212,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   weekArrowDisabled: {
     opacity: 0.45,
   },
   weekArrowText: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 24,
     fontWeight: '900',
   },
   weekArrowTextDisabled: {
-    color: COLORS.muted,
+    color: colors.muted,
   },
   weekRange: {
     flex: 1,
@@ -233,24 +235,24 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 18,
-    backgroundColor: '#edf7d7',
+    backgroundColor: colors.surfaceGreen,
     borderWidth: 1,
-    borderColor: '#d9ebaf',
+    borderColor: colors.border,
   },
   weekKicker: {
-    color: COLORS.accent,
+    color: colors.accent,
     fontSize: 11,
     fontWeight: '900',
     marginBottom: 2,
     textTransform: 'uppercase',
   },
   weekRangeText: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 18,
     fontWeight: '900',
   },
   navHint: {
-    color: COLORS.muted,
+    color: colors.muted,
     fontSize: 12,
     lineHeight: 17,
     marginBottom: 14,
@@ -258,7 +260,7 @@ const styles = StyleSheet.create({
   categoryTabs: {
     flexDirection: 'row',
     marginBottom: 18,
-    backgroundColor: '#e8edde',
+    backgroundColor: colors.surfaceGreen,
     borderRadius: 18,
     padding: 4,
   },
@@ -270,15 +272,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryTabActive: {
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
   },
   categoryTabText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '900',
   },
   categoryTabTextActive: {
-    color: COLORS.surface,
+    color: colors.surface,
   },
   tabContentWrapper: {
     flexDirection: 'row',
@@ -289,45 +291,45 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     marginLeft: 6,
   },
   subscribedDotActive: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
   },
   loader: {
     marginVertical: 26,
   },
   errorText: {
-    color: COLORS.danger,
+    color: colors.danger,
     fontSize: 13,
     fontWeight: '700',
     marginBottom: 14,
   },
   emptyState: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 22,
     padding: 22,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginBottom: 18,
   },
   emptyTitle: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 20,
     fontWeight: '900',
     marginBottom: 8,
   },
   emptyText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   planPanel: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 24,
     padding: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginBottom: 20,
   },
   planTopRow: {
@@ -337,25 +339,24 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   planCategory: {
-    color: COLORS.accent,
+    color: colors.accent,
     fontSize: 12,
     fontWeight: '900',
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   planTitle: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 22,
     fontWeight: '900',
-    paddingRight: 12,
   },
   planPrice: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 16,
     fontWeight: '900',
   },
   planDescription: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -365,11 +366,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: COLORS.brand,
+    borderColor: colors.brand,
     marginBottom: 10,
   },
   viewMenuButtonText: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 14,
     fontWeight: '900',
   },
@@ -378,21 +379,21 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
   },
   preorderButtonDisabled: {
-    backgroundColor: '#e2e6d9',
+    backgroundColor: colors.surfaceGreen,
   },
   preorderButtonText: {
-    color: COLORS.surface,
+    color: colors.surface,
     fontSize: 15,
     fontWeight: '900',
   },
   preorderButtonTextDisabled: {
-    color: COLORS.muted,
+    color: colors.muted,
   },
   preorderReason: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 17,
     marginTop: 10,

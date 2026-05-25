@@ -1,4 +1,4 @@
-export const COLORS = {
+export const lightColors = {
   background: '#f3f6ed',
   surface: '#ffffff',
   brand: '#0b2912',
@@ -17,6 +17,29 @@ export const COLORS = {
   inputBg: '#eef1e7',
   surfaceGreen: '#d6e3c1',
 };
+
+export const darkColors = {
+  background: '#121a14', // dark green charcoal
+  surface: '#1e2b20', // slightly lighter dark green for cards
+  brand: '#a8d8b1', // inverted brand color for highlights/accents
+  accent: '#7bb52b', // brightened accent
+  textPrimary: '#F4F4F5', // off-white
+  textSecondary: '#A1A1AA', // muted gray
+  textTertiary: '#7b8c75', // keep
+  border: '#2e4231', // dark green border
+  muted: '#8c9684', // keep
+  success: '#70b33e', // keep
+  danger: '#ff6b6b', // brighten danger
+  dangerSubtle: '#3d1a1a', // dark red subtle
+  highlight: '#5f8c22', // tone down highlight for dark mode
+  highlightSubtle: '#2e4231', // subtle dark green highlight
+  highlightBright: '#a8d8b1',
+  inputBg: '#1a241b', // very dark input bg
+  surfaceGreen: '#243627', // dark surface green
+};
+
+// Keep COLORS for backward compatibility temporarily while we refactor
+export const COLORS = lightColors;
 
 export const TYPOGRAPHY = {
   fontFamily: 'PlusJakartaSans',

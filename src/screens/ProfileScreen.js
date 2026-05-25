@@ -1,9 +1,11 @@
 import AppText from '../components/AppText';
 import React, { useMemo } from 'react';
-import { Image, ScrollView, StyleSheet, View, Pressable } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
 import { usePlans } from '../context/PlansContext';
+import { useTheme } from '../context/useTheme';
+import ThemeToggle from '../components/ThemeToggle';
+import * as ImagePicker from 'expo-image-picker';
 
 function getActiveDays(createdAt) {
   if (!createdAt) return 0;
@@ -24,8 +26,10 @@ function formatMacro(value, suffix = 'g') {
   return `${amount}${suffix}`;
 }
 
-export default function ProfileScreen({ user, onLogout, onEditProfile, onBack }) {
+export default function ProfileScreen({ user, onLogout, onEditProfile, onBack, onUpdateUser }) {
   const { orders, selectedPlanMeals } = usePlans();
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const stats = useMemo(() => {
     const orderCount = Array.isArray(orders) ? orders.length : 0;
@@ -66,12 +70,34 @@ export default function ProfileScreen({ user, onLogout, onEditProfile, onBack })
       .filter(Boolean);
   }, [orders]);
 
+  const handleChooseAvatar = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Please allow photo access to change your profile picture.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (result.canceled || result.cancelled) return;
+
+    const uri = result.assets?.[0]?.uri || result.uri;
+    if (!uri) return;
+
+    onUpdateUser?.({ avatar_url: uri });
+  };
+
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <HeaderBar title="Profile" onBack={onBack} />
 
       <View style={styles.profileCard}>
-        <View style={styles.avatarContainer}>
+        <Pressable style={styles.avatarContainer} onPress={handleChooseAvatar}>
           <View style={styles.avatarPlaceholder}>
             {user.avatar_url ? (
               <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
@@ -81,7 +107,10 @@ export default function ProfileScreen({ user, onLogout, onEditProfile, onBack })
               </AppText>
             )}
           </View>
-        </View>
+          <View style={styles.avatarEdit}>
+            <AppText style={styles.avatarEditIcon}>✎</AppText>
+          </View>
+        </Pressable>
         <AppText style={styles.userName}>{user.name}</AppText>
         <AppText style={styles.userEmail}>{user.email}</AppText>
         <AppText style={styles.userRole}>{user.role === 'admin' ? 'Administrator' : 'Customer'}</AppText>
@@ -97,6 +126,13 @@ export default function ProfileScreen({ user, onLogout, onEditProfile, onBack })
             <AppText style={styles.statValue}>{item.value}</AppText>
           </View>
         ))}
+      </View>
+
+      <View style={styles.infoCard}>
+        <View style={styles.infoHeader}>
+          <AppText style={styles.sectionTitle}>Preferences</AppText>
+        </View>
+        <ThemeToggle />
       </View>
 
       <View style={styles.infoCard}>
@@ -155,16 +191,16 @@ export default function ProfileScreen({ user, onLogout, onEditProfile, onBack })
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   root: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   content: {
     padding: 20,
     paddingBottom: 120,
   },
   profileCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     paddingVertical: 28,
     paddingHorizontal: 20,
@@ -179,7 +215,7 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 999,
-    backgroundColor: COLORS.surfaceGreen,
+    backgroundColor: colors.surfaceGreen,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -192,7 +228,7 @@ const styles = StyleSheet.create({
   avatarInitial: {
     fontSize: 32,
     fontWeight: '800',
-    color: COLORS.brand,
+    color: colors.brand,
   },
   avatarEdit: {
     position: 'absolute',
@@ -201,39 +237,39 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarEditIcon: {
-    color: COLORS.surface,
+    color: colors.surface,
     fontSize: 16,
   },
   userName: {
-    color: COLORS.brand,
+    color: colors.textPrimary,
     fontSize: 24,
     fontWeight: '800',
     marginBottom: 6,
   },
   userEmail: {
-    color: COLORS.muted,
+    color: colors.muted,
     marginBottom: 6,
   },
   userRole: {
-    color: COLORS.accent,
+    color: colors.accent,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 14,
   },
   editButton: {
-    backgroundColor: COLORS.highlight,
+    backgroundColor: colors.highlight,
     borderRadius: 16,
     paddingVertical: 11,
     paddingHorizontal: 22,
   },
   editButtonText: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: '800',
   },
   statsGrid: {
@@ -244,36 +280,36 @@ const styles = StyleSheet.create({
   },
   statItem: {
     width: '48%',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 18,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   statLabel: {
-    color: COLORS.muted,
+    color: colors.muted,
     fontSize: 12,
     marginBottom: 8,
   },
   statValue: {
-    color: COLORS.brand,
+    color: colors.textPrimary,
     fontSize: 24,
     fontWeight: '800',
   },
   infoCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 18,
     marginBottom: 16,
   },
   macroCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 18,
     marginBottom: 16,
   },
@@ -284,7 +320,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    color: COLORS.brand,
+    color: colors.textPrimary,
     fontSize: 17,
     fontWeight: '800',
   },
@@ -292,32 +328,32 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: COLORS.highlightSubtle,
+    backgroundColor: colors.highlightSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconButtonText: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 16,
     fontWeight: '800',
   },
   infoRow: {
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
     paddingVertical: 12,
   },
   infoRowLast: {
     paddingTop: 12,
   },
   infoLabel: {
-    color: COLORS.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: '700',
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   infoValue: {
-    color: COLORS.brand,
+    color: colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
     lineHeight: 22,
@@ -329,44 +365,44 @@ const styles = StyleSheet.create({
   },
   macroItem: {
     width: '48%',
-    backgroundColor: '#f8faf4',
+    backgroundColor: colors.surface, // changed from static color to match surface
     borderRadius: 16,
     padding: 14,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#e8edde',
+    borderColor: colors.border, // changed from static color to match border
   },
   macroLabel: {
-    color: COLORS.muted,
+    color: colors.muted,
     fontSize: 11,
     fontWeight: '700',
     marginBottom: 6,
   },
   macroValue: {
-    color: COLORS.brand,
+    color: colors.textPrimary,
     fontSize: 19,
     fontWeight: '800',
   },
   planHint: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '700',
   },
   planSummary: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 19,
     marginTop: 12,
   },
   logoutButton: {
-    backgroundColor: COLORS.dangerSubtle,
+    backgroundColor: colors.dangerSubtle,
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 16,
   },
   logoutText: {
-    color: COLORS.danger,
+    color: colors.danger,
     fontWeight: '800',
     fontSize: 15,
   },
