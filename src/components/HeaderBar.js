@@ -1,5 +1,7 @@
+import AppText from './AppText';
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../theme';
 
 export default function HeaderBar({ title, onBack, action }) {
@@ -7,17 +9,17 @@ export default function HeaderBar({ title, onBack, action }) {
     <View style={styles.row}>
       {onBack ? (
         <Pressable onPress={onBack} style={styles.iconButton}>
-          <Text style={styles.icon}>←</Text>
+          <Feather name="arrow-left" size={20} color={COLORS.brand} style={styles.icon} />
         </Pressable>
       ) : (
         <View style={styles.iconPlaceholder} />
       )}
 
-      <Text style={styles.title}>{title}</Text>
+      <AppText style={styles.title}>{title}</AppText>
 
       {action ? (
         <Pressable onPress={action.onPress} style={styles.iconButton}>
-          <Text style={styles.icon}>{action.icon}</Text>
+          <Feather name={action.icon} size={20} color={COLORS.brand} style={styles.icon} />
         </Pressable>
       ) : (
         <View style={styles.iconPlaceholder} />
@@ -40,8 +42,8 @@ const styles = StyleSheet.create({
     color: COLORS.brand,
   },
   iconButton: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
@@ -52,7 +54,7 @@ const styles = StyleSheet.create({
     color: COLORS.brand,
   },
   iconPlaceholder: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
   },
 });

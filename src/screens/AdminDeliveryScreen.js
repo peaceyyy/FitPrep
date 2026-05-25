@@ -1,5 +1,6 @@
+import AppText from '../components/AppText';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable, Image } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable, Image } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 
@@ -22,49 +23,49 @@ export default function AdminDeliveryScreen() {
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Delivery Tasks" action={{ icon: '🔔', onPress: () => {} }} />
+      <HeaderBar title="Delivery Tasks" action={{ icon: 'bell', onPress: () => {} }} />
 
-      <Text style={styles.sectionTitle}>ACTIVE TASKS</Text>
+      <AppText style={styles.sectionTitle}>ACTIVE TASKS</AppText>
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryText}>{String(active).padStart(2, '0')}</Text>
+        <AppText style={styles.summaryText}>{String(active).padStart(2, '0')}</AppText>
       </View>
-      <Text style={styles.sectionTitle}>COMPLETED TODAY</Text>
+      <AppText style={styles.sectionTitle}>COMPLETED TODAY</AppText>
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryText}>{completedToday}</Text>
+        <AppText style={styles.summaryText}>{completedToday}</AppText>
       </View>
       <View style={[styles.summaryCard, styles.efficiencyCard]}>
-        <Text style={styles.efficiencyLabel}>DAILY EFFICIENCY</Text>
-        <Text style={styles.efficiencyValue}>98%</Text>
+        <AppText style={styles.efficiencyLabel}>DAILY EFFICIENCY</AppText>
+        <AppText style={styles.efficiencyValue}>98%</AppText>
       </View>
 
       {tasks.map((task) => (
         <View key={task.id} style={styles.taskCard}>
           <View style={styles.taskHeader}>
-            <Text style={styles.taskName}>{task.name}</Text>
+            <AppText style={styles.taskName}>{task.name}</AppText>
             <View style={[styles.statusBadge, task.status === 'Urgent' ? styles.urgentBadge : task.status === 'Delivered' ? styles.deliveredBadge : styles.scheduledBadge]}>
-              <Text style={styles.statusBadgeText}>{task.status.toUpperCase()}</Text>
+              <AppText style={styles.statusBadgeText}>{task.status.toUpperCase()}</AppText>
             </View>
           </View>
           <View style={styles.addressRow}>
-            <Text style={styles.addressText}>{task.address}</Text>
+            <AppText style={styles.addressText}>{task.address}</AppText>
           </View>
           <View style={styles.proofBox}>
             {task.proof ? (
               <Image source={{ uri: task.proof }} style={styles.proofImage} />
             ) : (
-              <Text style={styles.proofText}>Proof of Delivery</Text>
+              <AppText style={styles.proofText}>Proof of Delivery</AppText>
             )}
           </View>
           <View style={styles.buttonsRow}>
             <Pressable style={styles.outButton} onPress={() => setOutForDelivery(task.id)}>
-              <Text style={styles.outButtonText}>Out for Delivery</Text>
+              <AppText style={styles.outButtonText}>Out for Delivery</AppText>
             </Pressable>
             <Pressable style={styles.deliveredButton} onPress={() => setDelivered(task.id)}>
-              <Text style={styles.deliveredButtonText}>Delivered</Text>
+              <AppText style={styles.deliveredButtonText}>Delivered</AppText>
             </Pressable>
           </View>
           <Pressable style={styles.uploadBox} onPress={() => attachProof(task.id)}>
-            <Text style={styles.uploadLabel}>Upload Photo</Text>
+            <AppText style={styles.uploadLabel}>Upload Photo</AppText>
           </Pressable>
         </View>
       ))}
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
   outButton: { backgroundColor: '#f4f7ef', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, flex: 1, marginRight: 8, alignItems: 'center' },
   outButtonText: { color: COLORS.brand, fontWeight: '800' },
   deliveredButton: { backgroundColor: COLORS.brand, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, flex: 1, marginLeft: 8, alignItems: 'center' },
-  deliveredButtonText: { color: '#fff', fontWeight: '800' },
+  deliveredButtonText: { color: COLORS.surface, fontWeight: '800' },
   uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.border, borderRadius: 18, paddingVertical: 18, alignItems: 'center' },
   uploadLabel: { color: COLORS.accent, fontWeight: '800' },
 });

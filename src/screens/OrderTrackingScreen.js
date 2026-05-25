@@ -1,75 +1,76 @@
+import AppText from '../components/AppText';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 
 export default function OrderTrackingScreen({ onBack }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Track Order" onBack={onBack} action={{ icon: '❓', onPress: () => {} }} />
+      <HeaderBar title="Track Order" onBack={onBack} action={{ icon: 'help-circle', onPress: () => {} }} />
 
       <View style={styles.card}>
-        <Text style={styles.statusLabel}>CURRENT DELIVERY</Text>
+        <AppText style={styles.statusLabel}>CURRENT DELIVERY</AppText>
         <View style={styles.orderHeadingRow}>
-          <Text style={styles.orderTitle}>Cutting Plan - Week 3</Text>
-          <View style={styles.activeBadge}><Text style={styles.activeBadgeText}>Active</Text></View>
+          <AppText style={styles.orderTitle}>Cutting Plan - Week 3</AppText>
+          <View style={styles.activeBadge}><AppText style={styles.activeBadgeText}>Active</AppText></View>
         </View>
-        <Text style={styles.orderSubtitle}>Order #FP-98231</Text>
+        <AppText style={styles.orderSubtitle}>Order #FP-98231</AppText>
         <View style={styles.avatarsRow}>
           <View style={styles.avatarDot} />
           <View style={styles.avatarDot} />
-          <View style={styles.extraCount}><Text style={styles.extraCountText}>+12</Text></View>
+          <View style={styles.extraCount}><AppText style={styles.extraCountText}>+12</AppText></View>
         </View>
-        <Text style={styles.arrivalLabel}>Estimated Arrival</Text>
-        <Text style={styles.arrivalTime}>Today, 2:30 PM</Text>
+        <AppText style={styles.arrivalLabel}>Estimated Arrival</AppText>
+        <AppText style={styles.arrivalTime}>Today, 2:30 PM</AppText>
       </View>
 
       <View style={styles.timelineCard}>
-        <Text style={styles.timelineTitle}>Delivery Status</Text>
+        <AppText style={styles.timelineTitle}>Delivery Status</AppText>
         <View style={styles.timelineItem}>
           <View style={styles.timelineDotCompleted} />
           <View style={styles.timelineContent}>
-            <Text style={styles.timelineStep}>Order Placed</Text>
-            <Text style={styles.timelineDetail}>We have received your meal selection</Text>
+            <AppText style={styles.timelineStep}>Order Placed</AppText>
+            <AppText style={styles.timelineDetail}>We have received your meal selection</AppText>
           </View>
-          <Text style={styles.timelineTime}>Oct 12, 09:00 AM</Text>
+          <AppText style={styles.timelineTime}>Oct 12, 09:00 AM</AppText>
         </View>
         <View style={styles.timelineItem}>
           <View style={styles.timelineDotCompleted} />
           <View style={styles.timelineContent}>
-            <Text style={styles.timelineStep}>Preparing</Text>
-            <Text style={styles.timelineDetail}>Chef-curated meals are being packed</Text>
+            <AppText style={styles.timelineStep}>Preparing</AppText>
+            <AppText style={styles.timelineDetail}>Chef-curated meals are being packed</AppText>
           </View>
-          <Text style={styles.timelineTime}>Oct 14, 02:30 PM</Text>
+          <AppText style={styles.timelineTime}>Oct 14, 02:30 PM</AppText>
         </View>
         <View style={styles.timelineItem}>
           <View style={styles.timelineDotActive} />
           <View style={styles.timelineContent}>
-            <Text style={styles.timelineStep}>Out for Delivery</Text>
-            <Text style={styles.timelineDetail}>Courier is 5 mins away from your location</Text>
+            <AppText style={styles.timelineStep}>Out for Delivery</AppText>
+            <AppText style={styles.timelineDetail}>Courier is 5 mins away from your location</AppText>
           </View>
-          <Text style={styles.timelineTime}>In Progress</Text>
+          <AppText style={styles.timelineTime}>In Progress</AppText>
         </View>
         <View style={styles.timelineFooter}>
           <View style={styles.mapPlaceholder} />
           <View style={styles.routePartner}>
             <View style={styles.partnerAvatar} />
             <View>
-              <Text style={styles.partnerName}>Marcus J.</Text>
-              <Text style={styles.partnerDetail}>Your Delivery Partner</Text>
+              <AppText style={styles.partnerName}>Marcus J.</AppText>
+              <AppText style={styles.partnerDetail}>Your Delivery Partner</AppText>
             </View>
             <Pressable style={styles.callButton} onPress={() => {}}>
-              <Text style={styles.callButtonText}>📞</Text>
+              <AppText style={styles.callButtonText}>📞</AppText>
             </Pressable>
           </View>
         </View>
       </View>
 
       <View style={styles.helpCard}>
-        <Text style={styles.helpHeading}>Need help with this order?</Text>
-        <Text style={styles.helpText}>Our wellness experts are online</Text>
+        <AppText style={styles.helpHeading}>Need help with this order?</AppText>
+        <AppText style={styles.helpText}>Our wellness experts are online</AppText>
         <Pressable style={styles.helpButton} onPress={() => {}}>
-          <Text style={styles.helpButtonText}>Chat Now</Text>
+          <AppText style={styles.helpButtonText}>Chat Now</AppText>
         </Pressable>
       </View>
     </ScrollView>
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   activeBadge: {
-    backgroundColor: '#d6f18a',
+    backgroundColor: COLORS.highlight,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   callButtonText: {
-    color: '#ffffff',
+    color: COLORS.surface,
     fontSize: 18,
   },
   helpCard: {
@@ -260,7 +261,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   helpHeading: {
-    color: '#ffffff',
+    color: COLORS.surface,
     fontSize: 18,
     fontWeight: '800',
     marginBottom: 8,

@@ -1,5 +1,6 @@
+import AppText from '../components/AppText';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable, ActivityIndicator } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 import { fetchMyOrders } from '../services/ordersService';
@@ -21,16 +22,21 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
     return new Date(isoStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const formatPrice = (value) => {
+    const amount = Number(value);
+    return Number.isNaN(amount) ? '$--' : `$${amount.toFixed(2)}`;
+  };
+
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="My Orders" action={{ icon: '⚙️', onPress: () => {} }} onBack={onBack} />
+      <HeaderBar title="My Orders" action={{ icon: 'settings', onPress: () => {} }} onBack={onBack} />
 
       {loading && <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 24 }} />}
 
       {!loading && orders.length === 0 && (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateTitle}>No orders yet</Text>
-          <Text style={styles.emptyStateText}>Browse the weekly plans and place your first preorder!</Text>
+          <AppText style={styles.emptyStateTitle}>No orders yet</AppText>
+          <AppText style={styles.emptyStateText}>Browse the weekly plans and place your first preorder!</AppText>
         </View>
       )}
 
@@ -38,30 +44,30 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
         <>
           <View style={styles.summaryRow}>
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Total Orders</Text>
-              <Text style={styles.summaryValue}>{orders.length}</Text>
+              <AppText style={styles.summaryLabel}>Total Orders</AppText>
+              <AppText style={styles.summaryValue}>{orders.length}</AppText>
             </View>
             <View style={[styles.summaryCard, styles.summaryActive]}>
-              <Text style={styles.summaryLabel}>Active</Text>
-              <Text style={styles.summaryValue}>{orders.filter((o) => o.status?.includes('Paid')).length}</Text>
+              <AppText style={styles.summaryLabel}>Active</AppText>
+              <AppText style={styles.summaryValue}>{orders.filter((o) => o.status?.includes('Paid')).length}</AppText>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Order History</Text>
+          <AppText style={styles.sectionTitle}>Order History</AppText>
           {orders.map((order) => (
             <View key={order.id} style={styles.orderCard}>
               <View style={styles.orderBadge} />
               <View style={styles.orderBody}>
-                <Text style={styles.orderTitle}>{order.published_weekly_plans?.name || 'Plan'}</Text>
-                <Text style={styles.orderDate}>Ordered {formatDate(order.created_at)}</Text>
-                <Text style={styles.orderPrice}>${order.published_weekly_plans?.weekly_price?.toFixed(2) || '—'}</Text>
+                <AppText style={styles.orderTitle}>{order.published_weekly_plans?.name || 'Plan'}</AppText>
+                <AppText style={styles.orderDate}>Ordered {formatDate(order.created_at)}</AppText>
+                <AppText style={styles.orderPrice}>{formatPrice(order.published_weekly_plans?.weekly_price)}</AppText>
               </View>
               <View style={styles.orderActions}>
                 <View style={styles.statusChip}>
-                  <Text style={styles.statusText}>{order.status?.toUpperCase()}</Text>
+                  <AppText style={styles.statusText}>{order.status?.toUpperCase()}</AppText>
                 </View>
                 <Pressable style={styles.reviewButton} onPress={() => onOpenReview(order)}>
-                  <Text style={styles.reviewButtonText}>Review</Text>
+                  <AppText style={styles.reviewButtonText}>Review</AppText>
                 </Pressable>
               </View>
             </View>
@@ -70,8 +76,8 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
       )}
 
       <View style={styles.ctaCard}>
-        <Text style={styles.ctaHeading}>Ready for next week?</Text>
-        <Text style={styles.ctaDescription}>New plans are published every Saturday. Check back to preorder!</Text>
+        <AppText style={styles.ctaHeading}>Ready for next week?</AppText>
+        <AppText style={styles.ctaDescription}>New plans are published every Saturday. Check back to preorder!</AppText>
       </View>
     </ScrollView>
   );
@@ -181,7 +187,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   reviewButton: {
-    backgroundColor: '#d6f18a',
+    backgroundColor: COLORS.highlight,
     borderRadius: 16,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -197,7 +203,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   ctaHeading: {
-    color: '#ffffff',
+    color: COLORS.surface,
     fontSize: 20,
     fontWeight: '800',
     marginBottom: 10,

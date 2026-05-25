@@ -1,5 +1,6 @@
+import AppText from '../components/AppText';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable, Image } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable, Image } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 
@@ -13,21 +14,21 @@ export default function AdminMealCategoryScreen({ category, meals = sampleMeals,
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <HeaderBar title={`${category?.charAt(0).toUpperCase() + category?.slice(1) || 'Category'} Plans`} onBack={onBack} />
 
-      <Text style={styles.sectionTitle}>Available Meals</Text>
+      <AppText style={styles.sectionTitle}>Available Meals</AppText>
       {meals.map((meal) => (
         <View key={meal.id} style={styles.mealCard}>
           <View style={styles.mealRow}>
             <View style={styles.mealInfo}>
-              <Text style={styles.mealTitle}>{meal.title}</Text>
-              <Text style={styles.mealDescription}>{meal.description}</Text>
+              <AppText style={styles.mealTitle}>{meal.title}</AppText>
+              <AppText style={styles.mealDescription}>{meal.description}</AppText>
             </View>
-            <Text style={styles.mealPrice}>{meal.price}</Text>
+            <AppText style={styles.mealPrice}>{meal.price}</AppText>
           </View>
         </View>
       ))}
 
       <Pressable style={styles.addButton} onPress={onAdd}>
-        <Text style={styles.addText}>＋ Add Meal</Text>
+        <AppText style={styles.addText}>＋ Add Meal</AppText>
       </Pressable>
     </ScrollView>
   );
@@ -44,5 +45,5 @@ const styles = StyleSheet.create({
   mealDescription: { color: COLORS.textSecondary, fontSize: 13 },
   mealPrice: { color: COLORS.accent, fontWeight: '800' },
   addButton: { marginTop: 10, backgroundColor: COLORS.brand, paddingVertical: 16, borderRadius: 18, alignItems: 'center' },
-  addText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  addText: { color: COLORS.surface, fontWeight: '800', fontSize: 16 },
 });

@@ -1,3 +1,4 @@
+import AppText from '../components/AppText';
 import React, { useState } from 'react';
 import {
   ScrollView,
@@ -7,9 +8,13 @@ import {
   View,
   Pressable,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../theme';
 import { supabase } from '../lib/supabaseClient';
+
+const GOAL_ICONS = { cutting: 'trending-down', bulking: 'trending-up', maintain: 'minus' };
 
 export default function RegisterScreen({ onBack }) {
   const [name, setName] = useState('');
@@ -27,39 +32,34 @@ export default function RegisterScreen({ onBack }) {
       <View style={styles.card}>
         <View style={styles.headerRow}>
           <Pressable style={styles.backButton} onPress={onBack}>
-            <Text style={styles.backArrow}>←</Text>
+            <AppText style={styles.backArrow}>←</AppText>
           </Pressable>
-          <Text style={styles.brandTitle}>FitFood</Text>
+          <AppText style={styles.brandTitle}>FitFood</AppText>
           <View style={styles.iconPlaceholder} />
         </View>
 
-        <Text style={styles.heading}>Create Account</Text>
-        <Text style={styles.subtext}>Join the community of high-performance nutrition.</Text>
+        <AppText style={styles.heading}>Create Account</AppText>
+        <AppText style={styles.subtext}>Join the community of high-performance nutrition.</AppText>
 
-        {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
-
-        <View style={styles.promoCard}>
-          <View style={styles.promoOverlay} />
-          <Text style={styles.promoBadge}>PREMIUM PREP</Text>
-        </View>
+        {errorMsg ? <AppText style={styles.errorText}>{errorMsg}</AppText> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Full Name</Text>
+          <AppText style={styles.fieldLabel}>Full Name</AppText>
           <TextInput
             style={styles.inputSolo}
             placeholder="John Doe"
-            placeholderTextColor="#7b7f7a"
+            placeholderTextColor={COLORS.textTertiary}
             value={name}
             onChangeText={setName}
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Email Address</Text>
+          <AppText style={styles.fieldLabel}>Email Address</AppText>
           <TextInput
             style={styles.inputSolo}
             placeholder="john@fitfood.com"
-            placeholderTextColor="#7b7f7a"
+            placeholderTextColor={COLORS.textTertiary}
             keyboardType="email-address"
             autoCapitalize="none"
             value={email}
@@ -67,7 +67,7 @@ export default function RegisterScreen({ onBack }) {
           />
         </View>
 
-        <Text style={styles.fieldLabel}>Fitness Goal</Text>
+        <AppText style={styles.fieldLabel}>Fitness Goal</AppText>
         <View style={styles.goalRow}>
           {['cutting', 'bulking', 'maintain'].map((item, index) => (
             <Pressable
@@ -79,46 +79,49 @@ export default function RegisterScreen({ onBack }) {
               ]}
               onPress={() => setGoal(item)}
             >
-              <Text style={styles.goalIcon}>
-                {item === 'cutting' ? '↘️' : item === 'bulking' ? '↗️' : '⏸️'}
-              </Text>
-              <Text style={[styles.goalLabel, goal === item && styles.goalLabelActive]}>
+              <Feather
+                name={GOAL_ICONS[item]}
+                size={18}
+                color={goal === item ? COLORS.accent : COLORS.muted}
+                style={styles.goalIcon}
+              />
+              <AppText style={[styles.goalLabel, goal === item && styles.goalLabelActive]}>
                 {item.toUpperCase()}
-              </Text>
+              </AppText>
             </Pressable>
           ))}
         </View>
 
         <View style={styles.rowInputs}>
           <View style={[styles.halfInputGroup, styles.rowInputSpacing]}>
-            <Text style={styles.fieldLabel}>Password</Text>
+            <AppText style={styles.fieldLabel}>Password</AppText>
             <View style={styles.inputRow}>
               <TextInput
                 style={styles.input}
                 placeholder="••••••••"
-                placeholderTextColor="#7b7f7a"
+                placeholderTextColor={COLORS.textTertiary}
                 secureTextEntry={securePassword}
                 value={password}
                 onChangeText={setPassword}
               />
               <Pressable onPress={() => setSecurePassword((prev) => !prev)}>
-                <Text style={styles.eyeIcon}>{securePassword ? '👁️' : '🙈'}</Text>
+                <Feather name={securePassword ? 'eye' : 'eye-off'} size={18} color={COLORS.muted} style={styles.eyeIcon} />
               </Pressable>
             </View>
           </View>
           <View style={styles.halfInputGroup}>
-            <Text style={styles.fieldLabel}>Confirm</Text>
+            <AppText style={styles.fieldLabel}>Confirm</AppText>
             <View style={styles.inputRow}>
               <TextInput
                 style={styles.input}
                 placeholder="••••••••"
-                placeholderTextColor="#7b7f7a"
+                placeholderTextColor={COLORS.textTertiary}
                 secureTextEntry={secureConfirm}
                 value={confirm}
                 onChangeText={setConfirm}
               />
               <Pressable onPress={() => setSecureConfirm((prev) => !prev)}>
-                <Text style={styles.eyeIcon}>{secureConfirm ? '👁️' : '🙈'}</Text>
+                <Feather name={secureConfirm ? 'eye' : 'eye-off'} size={18} color={COLORS.muted} style={styles.eyeIcon} />
               </Pressable>
             </View>
           </View>
@@ -141,7 +144,7 @@ export default function RegisterScreen({ onBack }) {
               }, 1000);
               return;
             }
-            const { error } = await supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signUp({
               email,
               password,
               options: {
@@ -151,20 +154,28 @@ export default function RegisterScreen({ onBack }) {
                 }
               }
             });
+            
+            setLoading(false);
+            
             if (error) {
               setErrorMsg(error.message);
-              setLoading(false);
+            } else {
+              Alert.alert(
+                'Registration Successful',
+                'Your account has been created. If email confirmation is required, please check your inbox before logging in.',
+                [{ text: 'OK', onPress: onBack }]
+              );
             }
           }}
           disabled={loading}
         >
-          <Text style={styles.primaryButtonText}>{loading ? 'Creating...' : 'Create Account'}</Text>
+          <AppText style={styles.primaryButtonText}>{loading ? 'Creating...' : 'Create Account'}</AppText>
         </Pressable>
 
         <View style={styles.bottomRow}>
-          <Text style={styles.bottomText}>Already have an account?</Text>
+          <AppText style={styles.bottomText}>Already have an account?</AppText>
           <TouchableOpacity onPress={onBack}>
-            <Text style={styles.bottomLink}> Login</Text>
+            <AppText style={styles.bottomLink}> Login</AppText>
           </TouchableOpacity>
         </View>
       </View>
@@ -204,7 +215,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: '#eef1e7',
+    backgroundColor: COLORS.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -228,35 +239,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtext: {
-    color: '#5e6b5a',
+    color: COLORS.textTertiary,
     fontSize: 15,
     lineHeight: 22,
     marginBottom: 22,
-  },
-  promoCard: {
-    width: '100%',
-    borderRadius: 22,
-    height: 140,
-    backgroundColor: '#e8f0db',
-    marginBottom: 24,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-    padding: 14,
-  },
-  promoOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(14, 46, 18, 0.08)',
-  },
-  promoBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#d6f18a',
-    color: COLORS.brand,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    fontWeight: '700',
-    fontSize: 12,
-    zIndex: 1,
   },
   fieldGroup: {
     marginBottom: 16,
@@ -269,7 +255,7 @@ const styles = StyleSheet.create({
   },
   inputSolo: {
     width: '100%',
-    backgroundColor: '#eef1e7',
+    backgroundColor: COLORS.inputBg,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -281,7 +267,7 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eef1e7',
+    backgroundColor: COLORS.inputBg,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -294,7 +280,6 @@ const styles = StyleSheet.create({
     color: COLORS.brand,
   },
   eyeIcon: {
-    fontSize: 18,
     marginLeft: 10,
   },
   errorText: {
@@ -326,7 +311,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.accent,
   },
   goalIcon: {
-    fontSize: 16,
     marginBottom: 6,
   },
   goalLabel: {
@@ -357,7 +341,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: COLORS.surface,
     fontSize: 17,
     fontWeight: '700',
   },

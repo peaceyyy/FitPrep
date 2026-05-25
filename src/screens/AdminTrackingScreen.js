@@ -1,44 +1,45 @@
+import AppText from '../components/AppText';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 
 export default function AdminTrackingScreen({ onBack }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Admin Tracking" onBack={onBack} action={{ icon: '📍', onPress: () => {} }} />
+      <HeaderBar title="Admin Tracking" onBack={onBack} action={{ icon: 'map-pin', onPress: () => {} }} />
 
       <View style={styles.card}>
-        <Text style={styles.statusLabel}>CURRENT VIEW</Text>
-        <Text style={styles.orderTitle}>Fulfillment Overview</Text>
-        <Text style={styles.orderSubtitle}>Review delivery progress for all active customer orders.</Text>
+        <AppText style={styles.statusLabel}>CURRENT VIEW</AppText>
+        <AppText style={styles.orderTitle}>Fulfillment Overview</AppText>
+        <AppText style={styles.orderSubtitle}>Review delivery progress for all active customer orders.</AppText>
 
         <View style={styles.timelineItem}>
           <View style={styles.stepMarkerCompleted} />
           <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Order Received</Text>
-            <Text style={styles.stepDetail}>All items are queued for packing.</Text>
+            <AppText style={styles.stepTitle}>Order Received</AppText>
+            <AppText style={styles.stepDetail}>All items are queued for packing.</AppText>
           </View>
         </View>
         <View style={styles.timelineItem}>
           <View style={styles.stepMarkerCompleted} />
           <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Preparation</Text>
-            <Text style={styles.stepDetail}>Kitchen team is assembling meals.</Text>
+            <AppText style={styles.stepTitle}>Preparation</AppText>
+            <AppText style={styles.stepDetail}>Kitchen team is assembling meals.</AppText>
           </View>
         </View>
         <View style={styles.timelineItem}>
           <View style={styles.stepMarkerActive} />
           <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Out for Delivery</Text>
-            <Text style={styles.stepDetail}>Drivers are en route to customers.</Text>
+            <AppText style={styles.stepTitle}>Out for Delivery</AppText>
+            <AppText style={styles.stepDetail}>Drivers are en route to customers.</AppText>
           </View>
         </View>
         <View style={styles.timelineItem}>
           <View style={styles.stepMarkerPending} />
           <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Complete</Text>
-            <Text style={styles.stepDetail}>Marked after customer confirmation.</Text>
+            <AppText style={styles.stepTitle}>Complete</AppText>
+            <AppText style={styles.stepDetail}>Marked after customer confirmation.</AppText>
           </View>
         </View>
       </View>

@@ -1,5 +1,6 @@
+import AppText from '../components/AppText';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 
@@ -12,37 +13,37 @@ const recent = [
 export default function AdminOverviewScreen({ onCreateMeal }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Dashboard Overview" action={{ icon: '⚙️', onPress: () => {} }} />
+      <HeaderBar title="Dashboard Overview" action={{ icon: 'settings', onPress: () => {} }} />
 
-      <Text style={styles.sectionTitle}>Operational Snapshot</Text>
+      <AppText style={styles.sectionTitle}>Operational Snapshot</AppText>
 
       <View style={styles.cardRow}>
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total Orders</Text>
-          <Text style={styles.statValue}>1,284</Text>
+          <AppText style={styles.statLabel}>Total Orders</AppText>
+          <AppText style={styles.statValue}>1,284</AppText>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Active Deliveries</Text>
-          <Text style={styles.statValue}>42</Text>
+          <AppText style={styles.statLabel}>Active Deliveries</AppText>
+          <AppText style={styles.statValue}>42</AppText>
         </View>
       </View>
 
       <View style={styles.revenueCard}>
-        <Text style={styles.statLabel}>Total Revenue</Text>
-        <Text style={styles.revenueValue}>$24,510</Text>
-        <View style={styles.graphPlaceholder}><Text style={styles.graphText}>[Revenue graph]</Text></View>
+        <AppText style={styles.statLabel}>Total Revenue</AppText>
+        <AppText style={styles.revenueValue}>$24,510</AppText>
+        <View style={styles.graphPlaceholder}><AppText style={styles.graphText}>[Revenue graph]</AppText></View>
       </View>
 
       <View style={styles.quickActions}>
         <Pressable style={styles.createButton} onPress={onCreateMeal}>
-          <Text style={styles.createButtonText}>+ Create Meal Plan</Text>
+          <AppText style={styles.createButtonText}>+ Create Meal Plan</AppText>
         </Pressable>
       </View>
 
-      <Text style={styles.sectionTitle}>Recent Activity</Text>
+      <AppText style={styles.sectionTitle}>Recent Activity</AppText>
       {recent.map((r) => (
         <View key={r.id} style={styles.activityRow}>
-          <Text style={styles.activityText}>{r.text}</Text>
+          <AppText style={styles.activityText}>{r.text}</AppText>
         </View>
       ))}
     </ScrollView>
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
   graphText: { color: COLORS.muted },
   quickActions: { marginBottom: 18 },
   createButton: { backgroundColor: COLORS.brand, paddingVertical: 14, borderRadius: 18, alignItems: 'center' },
-  createButtonText: { color: '#fff', fontWeight: '800' },
+  createButtonText: { color: COLORS.surface, fontWeight: '800' },
   activityRow: { backgroundColor: COLORS.surface, padding: 12, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
   activityText: { color: COLORS.textSecondary },
 });

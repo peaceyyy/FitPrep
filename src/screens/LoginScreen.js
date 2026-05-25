@@ -1,3 +1,4 @@
+import AppText from '../components/AppText';
 import React, { useState } from 'react';
 import {
   ScrollView,
@@ -8,6 +9,7 @@ import {
   Pressable,
   TouchableOpacity,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../theme';
 import { supabase } from '../lib/supabaseClient';
 
@@ -22,25 +24,25 @@ export default function LoginScreen({ onNavigateRegister }) {
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.card}>
         <View style={styles.logoBadge}>
-          <Text style={styles.logoIcon}>🍽️</Text>
+          <AppText style={styles.logoIcon}>🍽️</AppText>
         </View>
 
-        <Text style={styles.brandTitle}>FitFood</Text>
-        <Text style={styles.brandSubtitle}>ELITE FUELING</Text>
+        <AppText style={styles.brandTitle}>FitFood</AppText>
+        <AppText style={styles.brandSubtitle}>ELITE FUELING</AppText>
 
-        <Text style={styles.heading}>Welcome Back</Text>
-        <Text style={styles.subtext}>Sign in to continue your nutritional journey.</Text>
+        <AppText style={styles.heading}>Welcome Back</AppText>
+        <AppText style={styles.subtext}>Sign in to continue your nutritional journey.</AppText>
         
-        {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+        {errorMsg ? <AppText style={styles.errorText}>{errorMsg}</AppText> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Email Address</Text>
+          <AppText style={styles.fieldLabel}>Email Address</AppText>
           <View style={styles.inputRow}>
-            <Text style={styles.inputIcon}>✉️</Text>
+            <Feather name="mail" size={18} color={COLORS.muted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="name@example.com"
-              placeholderTextColor="#7b7f7a"
+              placeholderTextColor={COLORS.textTertiary}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -50,26 +52,22 @@ export default function LoginScreen({ onNavigateRegister }) {
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Password</Text>
+          <AppText style={styles.fieldLabel}>Password</AppText>
           <View style={styles.inputRow}>
-            <Text style={styles.inputIcon}>🔒</Text>
+            <Feather name="lock" size={18} color={COLORS.muted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="•••••••••"
-              placeholderTextColor="#7b7f7a"
+              placeholderTextColor={COLORS.textTertiary}
               secureTextEntry={secureEntry}
               value={password}
               onChangeText={setPassword}
             />
             <Pressable onPress={() => setSecureEntry((prev) => !prev)}>
-              <Text style={styles.eyeIcon}>{secureEntry ? '👁️' : '🙈'}</Text>
+              <Feather name={secureEntry ? 'eye' : 'eye-off'} size={18} color={COLORS.muted} style={styles.eyeIcon} />
             </Pressable>
           </View>
         </View>
-
-        <TouchableOpacity style={styles.linkButton} onPress={() => {}}>
-          <Text style={styles.linkText}>Forgot Password?</Text>
-        </TouchableOpacity>
 
         <Pressable 
           style={styles.primaryButton} 
@@ -92,35 +90,18 @@ export default function LoginScreen({ onNavigateRegister }) {
           }}
           disabled={loading}
         >
-          <Text style={styles.primaryButtonText}>{loading ? 'Signing In...' : 'Sign In'}</Text>
+          <AppText style={styles.primaryButtonText}>{loading ? 'Signing In...' : 'Sign In'}</AppText>
         </Pressable>
 
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <View style={styles.socialRow}>
-          <Pressable style={[styles.socialButton, styles.socialButtonSpacing]} onPress={() => {}}>
-            <Text style={styles.socialEmoji}>🌈</Text>
-            <Text style={styles.socialText}>Google</Text>
-          </Pressable>
-          <Pressable style={styles.socialButton} onPress={() => {}}>
-            <Text style={styles.socialEmoji}></Text>
-            <Text style={styles.socialText}>Apple</Text>
-          </Pressable>
-        </View>
-
         <View style={styles.bottomRow}>
-          <Text style={styles.bottomText}>Don’t have an account?</Text>
+          <AppText style={styles.bottomText}>Don’t have an account?</AppText>
           <TouchableOpacity onPress={onNavigateRegister}>
-            <Text style={styles.bottomLink}> Sign up</Text>
+            <AppText style={styles.bottomLink}> Sign up</AppText>
           </TouchableOpacity>
         </View>
       </View>
 
-      <Text style={styles.footer}>© 2024 FitFood Systems. All Rights Reserved.</Text>
+      <AppText style={styles.footer}>© 2024 FitFood Systems. All Rights Reserved.</AppText>
     </ScrollView>
   );
 }
@@ -164,7 +145,7 @@ const styles = StyleSheet.create({
   },
   logoIcon: {
     fontSize: 34,
-    color: '#b7de66',
+    color: COLORS.highlightBright,
   },
   brandTitle: {
     color: COLORS.brand,
@@ -173,7 +154,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   brandSubtitle: {
-    color: '#7b8c75',
+    color: COLORS.textTertiary,
     fontSize: 13,
     letterSpacing: 1,
     textAlign: 'center',
@@ -187,7 +168,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtext: {
-    color: '#5e6b5a',
+    color: COLORS.textTertiary,
     fontSize: 15,
     lineHeight: 22,
     marginBottom: 22,
@@ -204,7 +185,7 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eef1e7',
+    backgroundColor: COLORS.inputBg,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -213,24 +194,14 @@ const styles = StyleSheet.create({
   },
   inputIcon: {
     marginRight: 10,
-    fontSize: 18,
   },
   eyeIcon: {
-    fontSize: 18,
     marginLeft: 10,
   },
   input: {
     flex: 1,
     fontSize: 16,
     color: COLORS.brand,
-  },
-  linkButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 20,
-  },
-  linkText: {
-    color: COLORS.accent,
-    fontWeight: '700',
   },
   primaryButton: {
     backgroundColor: COLORS.brand,
@@ -240,51 +211,8 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: COLORS.surface,
     fontSize: 17,
-    fontWeight: '700',
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 18,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#d8dccf',
-  },
-  dividerText: {
-    marginHorizontal: 12,
-    color: '#8c9684',
-    fontSize: 12,
-    letterSpacing: 1,
-  },
-  socialRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  socialButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    paddingVertical: 14,
-  },
-  socialButtonSpacing: {
-    marginRight: 12,
-  },
-  socialEmoji: {
-    fontSize: 18,
-    marginRight: 8,
-  },
-  socialText: {
-    fontSize: 15,
-    color: COLORS.brand,
     fontWeight: '700',
   },
   bottomRow: {

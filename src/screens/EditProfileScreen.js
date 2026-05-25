@@ -1,3 +1,4 @@
+import AppText from '../components/AppText';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
@@ -40,25 +41,25 @@ export default function EditProfileScreen({ section, user, onSave, onBack }) {
       <HeaderBar title={section} onBack={onBack} />
 
       <View style={styles.card}>
-        <Text style={styles.label}>Edit {section}</Text>
+        <AppText style={styles.label}>Edit {section}</AppText>
 
         {section === 'Personal Information' && (
           <>
-            <Text style={styles.fieldLabel}>Full Name</Text>
+            <AppText style={styles.fieldLabel}>Full Name</AppText>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={setName}
               placeholder="Alex Johnson"
-              placeholderTextColor="#7b7f7a"
+              placeholderTextColor={COLORS.textTertiary}
             />
-            <Text style={styles.fieldLabel}>Email Address</Text>
+            <AppText style={styles.fieldLabel}>Email Address</AppText>
             <TextInput
               style={styles.input}
               value={email}
               onChangeText={setEmail}
               placeholder="alex@fitfood.com"
-              placeholderTextColor="#7b7f7a"
+              placeholderTextColor={COLORS.textTertiary}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -67,15 +68,15 @@ export default function EditProfileScreen({ section, user, onSave, onBack }) {
 
         {section === 'Fitness Goals' && (
           <View>
-            <Text style={styles.fieldLabel}>Select a goal</Text>
+            <AppText style={styles.fieldLabel}>Select a goal</AppText>
             {goalOptions.map((option) => (
               <Pressable
                 key={option.value}
                 style={[styles.goalButton, goal === option.value && styles.goalButtonActive]}
                 onPress={() => setGoal(option.value)}
               >
-                <Text style={[styles.goalButtonText, goal === option.value && styles.goalButtonTextActive]}>{option.label}</Text>
-                <Text style={styles.goalDescription}>{option.description}</Text>
+                <AppText style={[styles.goalButtonText, goal === option.value && styles.goalButtonTextActive]}>{option.label}</AppText>
+                <AppText style={styles.goalDescription}>{option.description}</AppText>
               </Pressable>
             ))}
           </View>
@@ -83,13 +84,13 @@ export default function EditProfileScreen({ section, user, onSave, onBack }) {
 
         {section === 'Delivery Address' && (
           <>
-            <Text style={styles.fieldLabel}>Shipping Address</Text>
+            <AppText style={styles.fieldLabel}>Shipping Address</AppText>
             <TextInput
               style={[styles.input, styles.multilineInput]}
               value={address}
               onChangeText={setAddress}
               placeholder="Enter your delivery address"
-              placeholderTextColor="#7b7f7a"
+              placeholderTextColor={COLORS.textTertiary}
               multiline
               numberOfLines={4}
             />
@@ -98,20 +99,20 @@ export default function EditProfileScreen({ section, user, onSave, onBack }) {
 
         {section === 'Payment Methods' && (
           <>
-            <Text style={styles.fieldLabel}>Default Card</Text>
+            <AppText style={styles.fieldLabel}>Default Card</AppText>
             <TextInput
               style={styles.input}
               value={paymentMethod}
               onChangeText={setPaymentMethod}
               placeholder="Visa •••• 1234"
-              placeholderTextColor="#7b7f7a"
+              placeholderTextColor={COLORS.textTertiary}
             />
-            <Text style={styles.helpText}>Update your payment card and email billing receipts to your account address.</Text>
+            <AppText style={styles.helpText}>Update your payment card and email billing receipts to your account address.</AppText>
           </>
         )}
 
         <Pressable style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveText}>Save Changes</Text>
+          <AppText style={styles.saveText}>Save Changes</AppText>
         </Pressable>
       </View>
     </ScrollView>
@@ -147,7 +148,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#eef1e7',
+    backgroundColor: COLORS.inputBg,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   saveText: {
-    color: '#ffffff',
+    color: COLORS.surface,
     fontWeight: '800',
     fontSize: 16,
   },

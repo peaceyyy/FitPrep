@@ -1,3 +1,4 @@
+import AppText from '../components/AppText';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, Pressable, TextInput } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
@@ -11,33 +12,33 @@ export default function ReviewScreen({ onBack, onSubmit }) {
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Rate Your Meal" onBack={onBack} action={{ icon: '👤', onPress: () => {} }} />
+      <HeaderBar title="Rate Your Meal" onBack={onBack} action={{ icon: 'user', onPress: () => {} }} />
 
       <View style={styles.heroCard}>
         <View style={styles.heroImage} />
-        <Text style={styles.mealTitle}>Atlantic Grilled Salmon</Text>
-        <Text style={styles.mealSubtitle}>ORDER #88291 · DELIVERED 20M AGO</Text>
+        <AppText style={styles.mealTitle}>Atlantic Grilled Salmon</AppText>
+        <AppText style={styles.mealSubtitle}>ORDER #88291 · DELIVERED 20M AGO</AppText>
       </View>
 
       <View style={styles.reviewCard}>
-        <Text style={styles.reviewHeading}>How was the taste?</Text>
-        <Text style={styles.reviewSubtext}>Tap a star to rate your meal experience</Text>
+        <AppText style={styles.reviewHeading}>How was the taste?</AppText>
+        <AppText style={styles.reviewSubtext}>Tap a star to rate your meal experience</AppText>
         <View style={styles.ratingRow}>
           {[1, 2, 3, 4, 5].map((star) => (
             <Pressable key={star} onPress={() => setRating(star)}>
-              <Text style={[styles.star, rating >= star ? styles.starActive : styles.starInactive]}>★</Text>
+              <AppText style={[styles.star, rating >= star ? styles.starActive : styles.starInactive]}>★</AppText>
             </Pressable>
           ))}
         </View>
-        <Text style={styles.ratingLabel}>{starLabels[rating - 1]}</Text>
+        <AppText style={styles.ratingLabel}>{starLabels[rating - 1]}</AppText>
       </View>
 
       <View style={styles.commentCard}>
-        <Text style={styles.commentLabel}>Share your thoughts</Text>
+        <AppText style={styles.commentLabel}>Share your thoughts</AppText>
         <TextInput
           style={styles.commentInput}
           placeholder="The seasoning was perfect, but could use more greens..."
-          placeholderTextColor="#7b7f7a"
+          placeholderTextColor={COLORS.textTertiary}
           value={comment}
           multiline
           numberOfLines={4}
@@ -47,19 +48,19 @@ export default function ReviewScreen({ onBack, onSubmit }) {
 
       <View style={styles.metricsRow}>
         <View style={styles.metricCard}>
-          <Text style={styles.metricTitle}>Freshness</Text>
+          <AppText style={styles.metricTitle}>Freshness</AppText>
           <View style={styles.metricTrack}><View style={[styles.metricFill, { width: '80%' }]} /></View>
-          <Text style={styles.metricValue}>4.8</Text>
+          <AppText style={styles.metricValue}>4.8</AppText>
         </View>
         <View style={[styles.metricCard, styles.metricSpacing]}>
-          <Text style={styles.metricTitle}>Portion</Text>
+          <AppText style={styles.metricTitle}>Portion</AppText>
           <View style={styles.metricTrack}><View style={[styles.metricFill, { width: '64%' }]} /></View>
-          <Text style={styles.metricValue}>4.2</Text>
+          <AppText style={styles.metricValue}>4.2</AppText>
         </View>
       </View>
 
       <Pressable style={styles.submitButton} onPress={() => onSubmit({ rating, comment })}>
-        <Text style={styles.submitLabel}>Submit Review →</Text>
+        <AppText style={styles.submitLabel}>Submit Review →</AppText>
       </Pressable>
     </ScrollView>
   );
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitLabel: {
-    color: '#ffffff',
+    color: COLORS.surface,
     fontWeight: '800',
     fontSize: 16,
   },

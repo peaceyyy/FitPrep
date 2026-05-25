@@ -1,9 +1,12 @@
+import AppText from '../components/AppText';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable, Alert, ActivityIndicator } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 import { placeOrder } from '../services/ordersService';
-import { supabase } from '../lib/supabaseClient';
+import { isSupabaseConfigured, supabase } from '../lib/supabaseClient';
+import { usePlans } from '../context/PlansContext';
+import { getPreorderEligibility } from '../services/plansService';
 
 const timeOptions = [
   { label: '6:00 AM', subtitle: 'Early Morning' },
@@ -15,12 +18,34 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
   const [paymentType, setPaymentType] = useState('online');
   const [loading, setLoading] = useState(false);
   const [proofAttached, setProofAttached] = useState(false);
+  const {
+    browsingWeekStartDate,
+    currentWeekStartDate,
+    loadOrders,
+    subscriptionForWeek,
+  } = usePlans();
+  const preorderEligibility = getPreorderEligibility({
+    browsingWeekStartDate,
+    currentWeekStartDate,
+    selectedPlan: plan,
+    subscriptionForWeek,
+  });
+  const canConfirm = preorderEligibility.canPreorder && !loading;
 
   const handleConfirm = async () => {
+    if (!preorderEligibility.canPreorder) {
+      Alert.alert('Preorder Locked', preorderEligibility.reason);
+      return;
+    }
+
     setLoading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData?.session?.user?.id;
+      let userId = user?.id || 'mock-user';
+      if (isSupabaseConfigured) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        userId = sessionData?.session?.user?.id;
+      }
+
       if (!userId || !plan?.id) {
         Alert.alert('Error', 'Could not place order. Please try again.');
         return;
@@ -31,6 +56,7 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
         return;
       }
       console.log('✅ [Orders] Order placed successfully for plan:', plan.name);
+      await loadOrders();
       onConfirm();
     } finally {
       setLoading(false);
@@ -39,30 +65,30 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Checkout" onBack={onBack} action={{ icon: 'FitFood', onPress: () => {} }} />
+      <HeaderBar title="Checkout" onBack={onBack}  />
 
       <View style={styles.summaryCard}>
         <View style={styles.summaryHeader}>
-          <View style={styles.planBadge}><Text style={styles.planBadgeText}>Plan Selected</Text></View>
-          <Text style={styles.summaryMeals}>14 Total Meals</Text>
+          <View style={styles.planBadge}><AppText style={styles.planBadgeText}>Plan Selected</AppText></View>
+          <AppText style={styles.summaryMeals}>14 Total Meals</AppText>
         </View>
-        <Text style={styles.summaryTitle}>{plan?.name || 'Selected Plan'}</Text>
+        <AppText style={styles.summaryTitle}>{plan?.name || 'Selected Plan'}</AppText>
         <View style={styles.recipeRow}>
           <View style={styles.recipeImage} />
           <View style={styles.recipeItems}>
-            <Text style={styles.recipeText}>6x Lemon Herb Roasted Chicken</Text>
-            <Text style={styles.recipeText}>4x Wild Caught Salmon & Asparagus</Text>
-            <Text style={styles.recipeText}>4x Lean Beef & Sweet Potato Mash</Text>
+            <AppText style={styles.recipeText}>6x Lemon Herb Roasted Chicken</AppText>
+            <AppText style={styles.recipeText}>4x Wild Caught Salmon & Asparagus</AppText>
+            <AppText style={styles.recipeText}>4x Lean Beef & Sweet Potato Mash</AppText>
           </View>
         </View>
         <View style={styles.planNote}>
-          <Text style={styles.planNoteIcon}>i</Text>
-          <Text style={styles.planNoteText}>Nutritional Focus: Low Carb / High Protein</Text>
-          <Text style={styles.planEdit}>Edit Items</Text>
+          <AppText style={styles.planNoteIcon}>i</AppText>
+          <AppText style={styles.planNoteText}>Nutritional Focus: Low Carb / High Protein</AppText>
+          <AppText style={styles.planEdit}>Edit Items</AppText>
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Delivery Time</Text>
+      <AppText style={styles.sectionTitle}>Delivery Time</AppText>
       <View style={styles.timeRow}>
         {timeOptions.map((option) => (
           <Pressable
@@ -70,57 +96,63 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
             style={[styles.timeOption, selectedTime === option.label && styles.timeOptionActive]}
             onPress={() => setSelectedTime(option.label)}
           >
-            <Text style={styles.timeIcon}>{option.label === '6:00 AM' ? '🌅' : '☀️'}</Text>
-            <Text style={[styles.timeLabel, selectedTime === option.label && styles.timeLabelActive]}>{option.label}</Text>
-            <Text style={styles.timeSubtitle}>{option.subtitle}</Text>
+            <AppText style={styles.timeIcon}>{option.label === '6:00 AM' ? '🌅' : '☀️'}</AppText>
+            <AppText style={[styles.timeLabel, selectedTime === option.label && styles.timeLabelActive]}>{option.label}</AppText>
+            <AppText style={styles.timeSubtitle}>{option.subtitle}</AppText>
           </Pressable>
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>Payment</Text>
+      <AppText style={styles.sectionTitle}>Payment</AppText>
       <View style={styles.paymentRow}>
         <Pressable
           style={[styles.paymentOption, paymentType === 'cash' && styles.paymentOptionActive]}
           onPress={() => setPaymentType('cash')}
         >
-          <Text style={[styles.paymentLabel, paymentType === 'cash' && styles.paymentLabelActive]}>Cash on Delivery</Text>
+          <AppText style={[styles.paymentLabel, paymentType === 'cash' && styles.paymentLabelActive]}>Cash on Delivery</AppText>
         </Pressable>
         <Pressable
           style={[styles.paymentOption, paymentType === 'online' && styles.paymentOptionActive]}
           onPress={() => setPaymentType('online')}
         >
-          <Text style={[styles.paymentLabel, paymentType === 'online' && styles.paymentLabelActive]}>Online Payment</Text>
+          <AppText style={[styles.paymentLabel, paymentType === 'online' && styles.paymentLabelActive]}>Online Payment</AppText>
         </Pressable>
       </View>
 
       {paymentType === 'online' && (
         <View style={styles.onlineCard}>
           <View style={styles.qrPlaceholder}>
-            <Text style={styles.qrLabel}>QR Code</Text>
+            <AppText style={styles.qrLabel}>QR Code</AppText>
           </View>
           <Pressable style={styles.attachButton} onPress={() => setProofAttached(true)}>
-            <Text style={styles.attachText}>{proofAttached ? 'Proof Attached' : 'Attach Proof of Payment'}</Text>
+            <AppText style={styles.attachText}>{proofAttached ? 'Proof Attached' : 'Attach Proof of Payment'}</AppText>
           </Pressable>
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>Shipping Address</Text>
+      <AppText style={styles.sectionTitle}>Shipping Address</AppText>
       <View style={styles.addressCard}>
-        <Text style={styles.addressTitle}>Home</Text>
-        <Text style={styles.addressText}>482 Fitness Way, Apt 4B, Austin TX</Text>
+        <AppText style={styles.addressTitle}>Home</AppText>
+        <AppText style={styles.addressText}>482 Fitness Way, Apt 4B, Austin TX</AppText>
       </View>
 
       <View style={styles.totalCard}>
-        <View style={styles.totalRow}><Text style={styles.totalLabel}>Subtotal</Text><Text style={styles.totalValue}>${plan?.weekly_price?.toFixed(2) || '—'}</Text></View>
-        <View style={styles.totalRow}><Text style={styles.totalLabel}>Delivery Fee</Text><Text style={[styles.totalValue, styles.freeLabel]}>FREE</Text></View>
+        <View style={styles.totalRow}><AppText style={styles.totalLabel}>Subtotal</AppText><AppText style={styles.totalValue}>${Number(plan?.weekly_price || 0).toFixed(2)}</AppText></View>
+        <View style={styles.totalRow}><AppText style={styles.totalLabel}>Delivery Fee</AppText><AppText style={[styles.totalValue, styles.freeLabel]}>FREE</AppText></View>
         <View style={styles.divider} />
-        <View style={styles.totalRow}><Text style={styles.totalTitle}>Total</Text><Text style={styles.totalTitle}>${plan?.weekly_price?.toFixed(2) || '—'}</Text></View>
+        <View style={styles.totalRow}><AppText style={styles.totalTitle}>Total</AppText><AppText style={styles.totalTitle}>${Number(plan?.weekly_price || 0).toFixed(2)}</AppText></View>
       </View>
 
-      <Pressable style={[styles.confirmButton, loading && { opacity: 0.6 }]} onPress={handleConfirm} disabled={loading}>
+      {!preorderEligibility.canPreorder && (
+        <View style={styles.checkoutNotice}>
+          <AppText style={styles.checkoutNoticeText}>{preorderEligibility.reason}</AppText>
+        </View>
+      )}
+
+      <Pressable style={[styles.confirmButton, !canConfirm && styles.confirmButtonDisabled]} onPress={handleConfirm} disabled={!canConfirm}>
         {loading
           ? <ActivityIndicator color="#ffffff" />
-          : <Text style={styles.confirmLabel}>Confirm & Pay →</Text>
+          : <AppText style={[styles.confirmLabel, !canConfirm && styles.confirmLabelDisabled]}>{canConfirm ? 'Confirm & Pay →' : 'Preorder Locked'}</AppText>
         }
       </Pressable>
     </ScrollView>
@@ -149,7 +181,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   planBadge: {
-    backgroundColor: '#d6f18a',
+    backgroundColor: COLORS.highlight,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -238,7 +270,7 @@ const styles = StyleSheet.create({
   },
   timeOptionActive: {
     borderColor: COLORS.accent,
-    backgroundColor: '#ecf7bf',
+    backgroundColor: COLORS.highlightSubtle,
   },
   timeIcon: {
     fontSize: 18,
@@ -275,7 +307,7 @@ const styles = StyleSheet.create({
   },
   paymentOptionActive: {
     borderColor: COLORS.accent,
-    backgroundColor: '#ecf7bf',
+    backgroundColor: COLORS.highlightSubtle,
   },
   paymentLabel: {
     color: COLORS.brand,
@@ -313,7 +345,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   attachText: {
-    color: '#ffffff',
+    color: COLORS.surface,
     fontWeight: '700',
   },
   addressCard: {
@@ -371,9 +403,27 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
+  confirmButtonDisabled: {
+    backgroundColor: '#e2e6d9',
+  },
   confirmLabel: {
-    color: '#ffffff',
+    color: COLORS.surface,
     fontWeight: '800',
     fontSize: 16,
+  },
+  confirmLabelDisabled: {
+    color: COLORS.muted,
+  },
+  checkoutNotice: {
+    backgroundColor: '#eef3e4',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+  },
+  checkoutNoticeText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
   },
 });

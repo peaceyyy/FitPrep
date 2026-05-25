@@ -1,81 +1,148 @@
-import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable, ActivityIndicator } from 'react-native';
+import AppText from '../components/AppText';
+import React, { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 import { usePlans } from '../context/PlansContext';
+import { DAY_ORDER, PLAN_CATEGORIES, normalizeDayLabel } from '../services/plansService';
 
-const DAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const CATEGORY_LABELS = {
+  Cutting: 'Cut',
+  Bulking: 'Bulk',
+  Maintenance: 'Maintain',
+};
+
+function formatMacros(meal) {
+  return `${meal.calories || 0} kcal | P ${meal.protein_g || 0}g | C ${meal.carbs_g || 0}g | F ${meal.fats_g || 0}g`;
+}
 
 export default function WeeklyPlanScreen({ onBack, onPreorder }) {
-  const { plans, meals, mealsLoading, selectedPlan, loadMealsForPlan } = usePlans();
-  const [selectedDay, setSelectedDay] = useState('Monday');
+  const {
+    browsingWeekStartDate,
+    currentWeekStartDate,
+    mealsLoading,
+    preorderEligibility,
+    selectedCategory,
+    selectedPlan,
+    selectedPlanMeals,
+    setSelectedCategory,
+    subscriptionForWeek,
+    weekRangeLabel,
+  } = usePlans();
+  const [selectedDay, setSelectedDay] = useState('Mon');
 
-  // Auto-load meals for the first plan on mount
-  useEffect(() => {
-    if (plans && plans.length > 0 && !selectedPlan) {
-      loadMealsForPlan(plans[0]);
-    }
-  }, [plans]);
+  const dayMeals = useMemo(() => (
+    selectedPlanMeals.filter((meal) => normalizeDayLabel(meal.day_of_week) === selectedDay)
+  ), [selectedDay, selectedPlanMeals]);
 
-  const plan = selectedPlan || plans?.[0];
-  const daysWithMeals = [...new Set(meals.map((m) => m.day_of_week))]
-    .sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
-  const dayMeals = meals.filter((m) => m.day_of_week === selectedDay);
+  const isCurrentWeek = browsingWeekStartDate === currentWeekStartDate;
+  const canPreorder = preorderEligibility.canPreorder;
+  const subscriptionPlanName = subscriptionForWeek?.published_weekly_plans?.name;
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <HeaderBar
-        title={plan ? `${plan.name} — ${plan.category}` : 'Weekly Plan'}
+        title={selectedPlan ? selectedPlan.name : 'Weekly Plan'}
         onBack={onBack}
       />
 
-      {mealsLoading && <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 24 }} />}
+      <View style={styles.weekHeader}>
+        <AppText style={styles.weekKicker}>{isCurrentWeek ? 'Current week plan' : 'Browsing meal week'}</AppText>
+        <AppText style={styles.weekTitle}>{weekRangeLabel}</AppText>
+      </View>
 
-      {!mealsLoading && daysWithMeals.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysRow}>
-          {daysWithMeals.map((day) => (
+      {subscriptionForWeek && (
+        <View style={styles.subscriptionNotice}>
+          <AppText style={styles.subscriptionTitle}>Subscribed</AppText>
+          <AppText style={styles.subscriptionText}>{subscriptionPlanName || 'Your plan'} is already locked in for this week.</AppText>
+        </View>
+      )}
+
+      <View style={styles.categoryTabs}>
+        {PLAN_CATEGORIES.map((category) => {
+          const active = selectedCategory === category;
+          return (
             <Pressable
-              key={day}
-              style={[styles.dayButton, selectedDay === day && styles.dayButtonActive]}
-              onPress={() => setSelectedDay(day)}
+              key={category}
+              accessibilityRole="button"
+              style={[styles.categoryTab, active && styles.categoryTabActive]}
+              onPress={() => setSelectedCategory(category)}
             >
-              <Text style={[styles.dayLabel, selectedDay === day && styles.dayLabelActive]}>
-                {day.slice(0, 3).toUpperCase()}
-              </Text>
+              <AppText style={[styles.categoryTabText, active && styles.categoryTabTextActive]}>
+                {CATEGORY_LABELS[category]}
+              </AppText>
             </Pressable>
-          ))}
-        </ScrollView>
-      )}
+          );
+        })}
+      </View>
 
-      {!mealsLoading && dayMeals.length === 0 && (
+      {!selectedPlan && (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>No meals scheduled for {selectedDay} yet.</Text>
+          <AppText style={styles.emptyTitle}>Hold your gains.</AppText>
+          <AppText style={styles.emptyStateText}>The {CATEGORY_LABELS[selectedCategory]} menu is still being prepared for this week.</AppText>
         </View>
       )}
 
-      {dayMeals.map((meal) => (
-        <View key={meal.id} style={styles.mealCard}>
-          <View style={styles.mealImagePlaceholder} />
-          <View style={styles.mealContent}>
-            <Text style={styles.mealType}>{meal.day_of_week?.toUpperCase()}</Text>
-            <Text style={styles.mealTitle}>{meal.meal_name}</Text>
-            <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
-            <View style={styles.nutritionRow}>
-              <Text style={styles.nutritionText}>PROTEIN {meal.protein_g}g</Text>
-              <Text style={styles.nutritionText}>CARBS {meal.carbs_g}g</Text>
-              <Text style={styles.nutritionText}>FAT {meal.fats_g}g</Text>
-            </View>
-            <View style={styles.nutritionTrack}>
-              <View style={[styles.nutritionFill, { width: `${Math.min(100, ((meal.protein_g || 0) / 50) * 100)}%` }]} />
-            </View>
+      {selectedPlan && (
+        <>
+          <View style={styles.planSummary}>
+            <AppText style={styles.planCategory}>{selectedPlan.category}</AppText>
+            <AppText style={styles.planTitle}>{selectedPlan.name}</AppText>
+            <AppText style={styles.planDescription}>{selectedPlan.description || 'Meals are being finalized.'}</AppText>
           </View>
-        </View>
-      ))}
 
-      {plan && (
-        <Pressable style={styles.preorderButton} onPress={() => onPreorder(plan)}>
-          <Text style={styles.preorderLabel}>Preorder This Plan →</Text>
-        </Pressable>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.daysRow}>
+            {DAY_ORDER.map((day) => (
+              <Pressable
+                key={day}
+                accessibilityRole="button"
+                style={[styles.dayButton, selectedDay === day && styles.dayButtonActive]}
+                onPress={() => setSelectedDay(day)}
+              >
+                <AppText style={[styles.dayLabel, selectedDay === day && styles.dayLabelActive]}>
+                  {day.toUpperCase()}
+                </AppText>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          {mealsLoading && <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 24 }} />}
+
+          {!mealsLoading && dayMeals.length === 0 && (
+            <View style={styles.emptyState}>
+              <AppText style={styles.emptyStateText}>No meals scheduled for {selectedDay} yet.</AppText>
+            </View>
+          )}
+
+          {dayMeals.map((meal) => (
+            <View key={meal.id} style={styles.mealCard}>
+              <View style={styles.mealHeader}>
+                <View style={styles.mealDayBadge}>
+                  <AppText style={styles.mealDayText}>{selectedDay}</AppText>
+                </View>
+                <AppText style={styles.mealCalories}>{meal.calories || 0} kcal</AppText>
+              </View>
+              <AppText style={styles.mealTitle}>{meal.meal_name}</AppText>
+              {!!meal.description && <AppText style={styles.mealDescription}>{meal.description}</AppText>}
+              <AppText style={styles.nutritionText}>{formatMacros(meal)}</AppText>
+              <View style={styles.nutritionTrack}>
+                <View style={[styles.nutritionFill, { width: `${Math.min(100, ((meal.protein_g || 0) / 60) * 100)}%` }]} />
+              </View>
+            </View>
+          ))}
+
+          <Pressable
+            accessibilityRole="button"
+            style={[styles.preorderButton, !canPreorder && styles.preorderButtonDisabled]}
+            onPress={() => canPreorder && onPreorder(selectedPlan)}
+            disabled={!canPreorder}
+          >
+            <AppText style={[styles.preorderLabel, !canPreorder && styles.preorderLabelDisabled]}>
+              {canPreorder ? 'Preorder This Plan' : 'Preorder Locked'}
+            </AppText>
+          </Pressable>
+          <AppText style={styles.preorderReason}>{preorderEligibility.reason}</AppText>
+        </>
       )}
     </ScrollView>
   );
@@ -89,96 +156,190 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 120,
   },
-  daysRow: {
-    marginBottom: 22,
-  },
-  emptyState: {
-    backgroundColor: COLORS.surface,
+  weekHeader: {
+    backgroundColor: '#edf7d7',
     borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: '#d9ebaf',
+    padding: 16,
+    marginBottom: 14,
   },
-  emptyStateText: {
-    color: COLORS.textSecondary,
-    fontSize: 15,
-    textAlign: 'center',
+  weekKicker: {
+    color: COLORS.accent,
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
-  sectionNavButton: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
+  weekTitle: {
+    color: COLORS.brand,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  subscriptionNotice: {
+    backgroundColor: '#f4fbeb',
     borderRadius: 18,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#a9d56b',
+    padding: 14,
+    marginBottom: 14,
   },
-  sectionNavButtonActive: {
+  subscriptionTitle: {
+    color: COLORS.brand,
+    fontSize: 14,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  subscriptionText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  categoryTabs: {
+    flexDirection: 'row',
+    marginBottom: 18,
+    backgroundColor: '#e8edde',
+    borderRadius: 18,
+    padding: 4,
+  },
+  categoryTab: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryTabActive: {
     backgroundColor: COLORS.brand,
   },
-  sectionNavLabel: {
+  categoryTabText: {
     color: COLORS.textSecondary,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '900',
   },
-  sectionNavLabelActive: {
-    color: '#ffffff',
+  categoryTabTextActive: {
+    color: COLORS.surface,
+  },
+  planSummary: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 18,
+    marginBottom: 18,
+  },
+  planCategory: {
+    color: COLORS.accent,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 5,
+  },
+  planTitle: {
+    color: COLORS.brand,
+    fontSize: 22,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  planDescription: {
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  daysRow: {
+    marginBottom: 18,
   },
   dayButton: {
+    minWidth: 54,
+    minHeight: 46,
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    marginRight: 12,
+    borderRadius: 16,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dayButtonActive: {
     backgroundColor: COLORS.brand,
+    borderColor: COLORS.brand,
   },
   dayLabel: {
     color: COLORS.textSecondary,
-    fontWeight: '700',
+    fontWeight: '900',
+    fontSize: 12,
   },
   dayLabelActive: {
-    color: '#ffffff',
+    color: COLORS.surface,
   },
-  mealCard: {
+  emptyState: {
     backgroundColor: COLORS.surface,
-    borderRadius: 26,
+    borderRadius: 22,
+    padding: 22,
+    alignItems: 'center',
     marginBottom: 18,
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  mealImagePlaceholder: {
-    height: 140,
-    backgroundColor: '#cde0c0',
-  },
-  mealContent: {
-    padding: 18,
-  },
-  mealType: {
-    color: COLORS.accent,
-    fontSize: 12,
-    fontWeight: '700',
+  emptyTitle: {
+    color: COLORS.brand,
+    fontSize: 20,
+    fontWeight: '900',
     marginBottom: 8,
   },
+  emptyStateText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  mealCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 22,
+    marginBottom: 14,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  mealHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  mealDayBadge: {
+    backgroundColor: '#edf7d7',
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+  },
+  mealDayText: {
+    color: COLORS.brand,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  mealCalories: {
+    color: COLORS.accent,
+    fontSize: 13,
+    fontWeight: '900',
+  },
   mealTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 19,
+    fontWeight: '900',
     color: COLORS.brand,
     marginBottom: 8,
   },
-  mealCalories: {
+  mealDescription: {
     color: COLORS.textSecondary,
-    marginBottom: 14,
-  },
-  nutritionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    lineHeight: 20,
     marginBottom: 12,
   },
   nutritionText: {
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.muted,
-    fontWeight: '700',
+    fontWeight: '800',
+    marginBottom: 12,
   },
   nutritionTrack: {
     height: 8,
@@ -193,13 +354,27 @@ const styles = StyleSheet.create({
   preorderButton: {
     backgroundColor: COLORS.brand,
     borderRadius: 20,
-    paddingVertical: 16,
+    minHeight: 52,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 10,
   },
+  preorderButtonDisabled: {
+    backgroundColor: '#e2e6d9',
+  },
   preorderLabel: {
-    color: '#ffffff',
-    fontWeight: '800',
+    color: COLORS.surface,
+    fontWeight: '900',
     fontSize: 16,
+  },
+  preorderLabelDisabled: {
+    color: COLORS.muted,
+  },
+  preorderReason: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 10,
+    textAlign: 'center',
   },
 });

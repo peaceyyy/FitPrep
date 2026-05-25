@@ -1,5 +1,6 @@
+import AppText from '../components/AppText';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 
@@ -10,54 +11,40 @@ const stats = [
   { label: 'Next Cycle', value: '3d' },
 ];
 
-const settings = [
-  { label: 'Personal Information', icon: '👤' },
-  { label: 'Fitness Goals', icon: '⚒️' },
-  { label: 'Delivery Address', icon: '📍' },
-  { label: 'Payment Methods', icon: '💳' },
-];
-
-export default function ProfileScreen({ user, onLogout, onNavigateSetting, onBack }) {
+export default function ProfileScreen({ user, onLogout, onBack }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Profile" action={{ icon: '☰', onPress: () => {} }} onBack={onBack} />
+      <HeaderBar title="Profile" onBack={onBack} />
 
       <View style={styles.profileCard}>
         <View style={styles.avatarContainer}>
           <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarInitial}>A</Text>
+            <AppText style={styles.avatarInitial}>
+              {(user.name || '?')[0].toUpperCase()}
+            </AppText>
           </View>
-          <View style={styles.avatarEdit}> <Text style={styles.avatarEditIcon}>✎</Text></View>
+          <View style={styles.avatarEdit}> <AppText style={styles.avatarEditIcon}>✎</AppText></View>
         </View>
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
-        <Text style={styles.userRole}>{user.role === 'admin' ? 'Administrator' : 'Customer'}</Text>
+        <AppText style={styles.userName}>{user.name}</AppText>
+        <AppText style={styles.userEmail}>{user.email}</AppText>
+        <AppText style={styles.userRole}>{user.role === 'admin' ? 'Administrator' : 'Customer'}</AppText>
         <View style={styles.badgesRow}>
-          <View style={styles.badge}><Text style={styles.badgeLabel}>ELITE MEMBER</Text></View>
-          <View style={styles.badge}><Text style={styles.badgeLabel}>VEGAN FOCUS</Text></View>
+          <View style={styles.badge}><AppText style={styles.badgeLabel}>ELITE MEMBER</AppText></View>
+          <View style={styles.badge}><AppText style={styles.badgeLabel}>VEGAN FOCUS</AppText></View>
         </View>
       </View>
 
       <View style={styles.statsGrid}>
         {stats.map((item) => (
           <View key={item.label} style={styles.statItem}>
-            <Text style={styles.statLabel}>{item.label.toUpperCase()}</Text>
-            <Text style={styles.statValue}>{item.value}</Text>
+            <AppText style={styles.statLabel}>{item.label.toUpperCase()}</AppText>
+            <AppText style={styles.statValue}>{item.value}</AppText>
           </View>
         ))}
       </View>
 
-      <Text style={styles.sectionHeading}>Settings</Text>
-      {settings.map((item) => (
-        <Pressable key={item.label} style={styles.settingRow} onPress={() => onNavigateSetting(item.label)}>
-          <Text style={styles.settingIcon}>{item.icon}</Text>
-          <Text style={styles.settingText}>{item.label}</Text>
-          <Text style={styles.settingChevron}>›</Text>
-        </Pressable>
-      ))}
-
       <Pressable style={styles.logoutButton} onPress={onLogout}>
-        <Text style={styles.logoutText}>LOGOUT</Text>
+        <AppText style={styles.logoutText}>LOGOUT</AppText>
       </Pressable>
     </ScrollView>
   );
@@ -87,7 +74,7 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 999,
-    backgroundColor: '#d6e3c1',
+    backgroundColor: COLORS.surfaceGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -108,7 +95,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarEditIcon: {
-    color: '#ffffff',
+    color: COLORS.surface,
     fontSize: 16,
   },
   userName: {
@@ -170,38 +157,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
   },
-  sectionHeading: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.brand,
-    marginBottom: 12,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  settingIcon: {
-    marginRight: 14,
-    fontSize: 18,
-  },
-  settingText: {
-    flex: 1,
-    color: COLORS.brand,
-    fontWeight: '700',
-  },
-  settingChevron: {
-    color: COLORS.muted,
-    fontSize: 18,
-  },
   logoutButton: {
-    backgroundColor: '#fbeaea',
+    backgroundColor: COLORS.dangerSubtle,
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',

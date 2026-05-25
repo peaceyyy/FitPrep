@@ -1,9 +1,18 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, View, Text } from 'react-native';
+import { SafeAreaView, StyleSheet, View } from 'react-native';
+import {
+  useFonts,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
+import AppText from './components/AppText';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import HomeScreen from './screens/HomeScreen';
+import PlansScreen from './screens/PlansScreen';
 import OrdersScreen from './screens/OrdersScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import AdminDashboardScreen from './screens/AdminDashboardScreen';
@@ -20,15 +29,24 @@ import { supabase } from './lib/supabaseClient';
 import { PlansProvider } from './context/PlansContext';
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans: PlusJakartaSans_400Regular,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+
   const [history, setHistory] = useState(['login']);
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [user, setUser] = useState({
+    id: '',
     name: 'Loading...',
     email: '',
     goal: 'bulking',
     role: 'customer',
   });
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [adminMealPlanId, setAdminMealPlanId] = useState(null);
 
   const route = history[history.length - 1];
 
@@ -85,6 +103,7 @@ export default function App() {
     const role = session.user.app_metadata?.role || 'customer';
     setUser((prev) => ({
       ...prev,
+      id: session.user.id,
       role,
       email: session.user.email,
       name: session.user.user_metadata?.full_name || (role === 'admin' ? 'FitFood Admin' : 'Customer'),
@@ -113,11 +132,16 @@ export default function App() {
     navigateTo('checkout');
   };
 
+  const handleOpenAdminMealForm = (plan) => {
+    setAdminMealPlanId(plan?.id || null);
+    navigateTo('adminMealForm');
+  };
+
   const renderScreen = () => {
-    if (!sessionLoaded) {
+    if (!sessionLoaded || !fontsLoaded) {
       return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: COLORS.brand }}>Loading...</Text>
+          <AppText style={{ color: COLORS.brand }}>Loading...</AppText>
         </View>
       );
     }
@@ -127,7 +151,9 @@ export default function App() {
       case 'register':
         return <RegisterScreen onBack={navigateBack} />;
       case 'home':
-        return <HomeScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} onBack={history.length > 1 ? navigateBack : null} />;
+        return <HomeScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onBack={history.length > 1 ? navigateBack : null} />;
+      case 'plans':
+        return <PlansScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} onBack={history.length > 1 ? navigateBack : null} />;
       case 'orders':
         return <OrdersScreen user={user} onOpenCheckout={handleOpenCheckout} onOpenReview={() => navigateTo('review')} onBack={history.length > 1 ? navigateBack : null} />;
       case 'profile':
@@ -143,9 +169,9 @@ export default function App() {
       case 'adminOrders':
         return <AdminOrdersScreen onBack={history.length > 1 ? navigateBack : null} />;
       case 'adminMeals':
-        return <AdminMealsScreen onCreateMeal={() => navigateTo('adminMealForm')} onBack={history.length > 1 ? navigateBack : null} />;
+        return <AdminMealsScreen onCreateMeal={handleOpenAdminMealForm} onBack={history.length > 1 ? navigateBack : null} />;
       case 'adminMealForm':
-        return <AdminMealForm onBack={navigateBack} />;
+        return <AdminMealForm initialPlanId={adminMealPlanId} onBack={navigateBack} />;
       default:
         return <HomeScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} />;
     }
@@ -157,8 +183,8 @@ export default function App() {
         <StatusBar style="dark" />
         <View style={styles.container}>
           <View style={styles.screenContent}>{renderScreen()}</View>
-          {['home', 'orders', 'profile', 'weeklyPlan'].includes(route) && (
-            <BottomNav active={route === 'weeklyPlan' ? 'home' : route} onChange={resetTo} />
+          {['home', 'plans', 'orders', 'profile', 'weeklyPlan'].includes(route) && (
+            <BottomNav active={route === 'weeklyPlan' ? 'plans' : route} onChange={resetTo} />
           )}
           {['adminHome', 'adminOrders', 'adminMeals'].includes(route) && (
             <AdminBottomNav active={route} onChange={resetTo} />

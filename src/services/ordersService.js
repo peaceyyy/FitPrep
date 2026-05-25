@@ -30,19 +30,29 @@ export async function fetchMyOrders() {
     return { data: [], error: null };
   }
 
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  if (sessionError || !userId) {
+    return { data: [], error: sessionError };
+  }
+
   const { data, error } = await supabase
     .from('weekly_orders')
     .select(`
       id,
+      plan_id,
       status,
       created_at,
       published_weekly_plans (
+        id,
         name,
         category,
         weekly_price,
         week_start_date
       )
     `)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
   return { data: data || [], error };
@@ -61,13 +71,16 @@ export async function fetchAllOrders() {
     .from('weekly_orders')
     .select(`
       id,
+      plan_id,
       status,
       created_at,
       user_id,
       published_weekly_plans (
+        id,
         name,
         category,
-        weekly_price
+        weekly_price,
+        week_start_date
       )
     `)
     .order('created_at', { ascending: false });

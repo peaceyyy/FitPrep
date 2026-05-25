@@ -1,3 +1,4 @@
+import AppText from '../components/AppText';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
@@ -35,16 +36,21 @@ export default function AdminOrdersScreen({ onBack }) {
     return new Date(isoStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const formatPrice = (value) => {
+    const amount = Number(value);
+    return Number.isNaN(amount) ? '$--' : `$${amount.toFixed(2)}`;
+  };
+
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Order Management" action={{ icon: '🔄', onPress: () => {} }} onBack={onBack} />
+      <HeaderBar title="Order Management" action={{ icon: 'refresh-cw', onPress: () => {} }} onBack={onBack} />
 
-      <Text style={styles.sectionTitle}>All Orders</Text>
+      <AppText style={styles.sectionTitle}>All Orders</AppText>
       <TextInput
         value={searchText}
         onChangeText={setSearchText}
         placeholder="Search by order ID or plan name..."
-        placeholderTextColor="#9aa298"
+        placeholderTextColor={COLORS.textTertiary}
         style={styles.searchInput}
       />
 
@@ -55,7 +61,7 @@ export default function AdminOrdersScreen({ onBack }) {
             style={[styles.filterChip, filter === option && styles.filterChipActive]}
             onPress={() => setFilter(option)}
           >
-            <Text style={[styles.filterLabel, filter === option && styles.filterLabelActive]}>{option}</Text>
+            <AppText style={[styles.filterLabel, filter === option && styles.filterLabelActive]}>{option}</AppText>
           </Pressable>
         ))}
       </View>
@@ -64,23 +70,23 @@ export default function AdminOrdersScreen({ onBack }) {
 
       {!loading && filtered.length === 0 && (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No orders found.</Text>
+          <AppText style={styles.emptyText}>No orders found.</AppText>
         </View>
       )}
 
       {filtered.map((order) => (
         <View key={order.id} style={styles.orderCard}>
           <View style={styles.orderHead}>
-            <Text style={styles.orderId}>#{order.id.slice(0, 8).toUpperCase()}</Text>
+            <AppText style={styles.orderId}>#{order.id.slice(0, 8).toUpperCase()}</AppText>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>{order.status?.toUpperCase()}</Text>
+              <AppText style={styles.statusText}>{order.status?.toUpperCase()}</AppText>
             </View>
           </View>
-          <Text style={styles.orderPlan}>{order.published_weekly_plans?.name || '—'}</Text>
-          <Text style={styles.orderCategory}>{order.published_weekly_plans?.category}</Text>
+          <AppText style={styles.orderPlan}>{order.published_weekly_plans?.name || '—'}</AppText>
+          <AppText style={styles.orderCategory}>{order.published_weekly_plans?.category}</AppText>
           <View style={styles.orderFooter}>
-            <Text style={styles.orderDate}>{formatDate(order.created_at)}</Text>
-            <Text style={styles.orderPrice}>${order.published_weekly_plans?.weekly_price?.toFixed(2) || '—'}</Text>
+            <AppText style={styles.orderDate}>{formatDate(order.created_at)}</AppText>
+            <AppText style={styles.orderPrice}>{formatPrice(order.published_weekly_plans?.weekly_price)}</AppText>
           </View>
         </View>
       ))}
