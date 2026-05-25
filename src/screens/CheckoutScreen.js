@@ -17,7 +17,7 @@ const timeOptions = [
 export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
   const [selectedTime, setSelectedTime] = useState('6:00 AM');
   const [loading, setLoading] = useState(false);
-  const [proofAttached, setProofAttached] = useState(false);
+  const [paymentMarked, setPaymentMarked] = useState(false);
   
   const {
     browsingWeekStartDate,
@@ -180,45 +180,45 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
       <View style={styles.paymentCard}>
         <View style={styles.paymentHeader}>
           <Ionicons name="card-outline" size={20} color={COLORS.brand} style={{ marginRight: 8 }} />
-          <AppText style={styles.paymentCardTitle}>{MOCK_PAYMENT_METHOD} QR Payment</AppText>
+          <AppText style={styles.paymentCardTitle}>{MOCK_PAYMENT_METHOD} Demo Payment</AppText>
         </View>
         
         <View style={styles.onlineCardContent}>
           <View style={styles.qrPlaceholder}>
             <Ionicons name="qr-code-outline" size={48} color={COLORS.brand} style={{ marginBottom: 6 }} />
-            <AppText style={styles.qrLabel}>GCASH / MAYA SCAN TO PAY</AppText>
-            <AppText style={styles.qrSubText}>Save this QR to scan in your payment app</AppText>
+            <AppText style={styles.qrLabel}>GCASH DEMO QR</AppText>
+            <AppText style={styles.qrSubText}>Shown for the MVP walkthrough only</AppText>
           </View>
           
           <View style={styles.paymentDetails}>
             <AppText style={styles.detailsLabel}>Account Name:</AppText>
             <AppText style={styles.detailsValue}>PrepMate Food Services</AppText>
-            <AppText style={styles.detailsLabel}>GCash / Maya No:</AppText>
-            <AppText style={styles.detailsValue}>0917-123-4567</AppText>
-            <AppText style={styles.detailsLabel}>BDO Account No:</AppText>
-            <AppText style={styles.detailsValue}>0012-3456-7890</AppText>
+            <AppText style={styles.detailsLabel}>GCash No:</AppText>
+            <AppText style={styles.detailsValue}>{user?.contactNumber || 'Not provided'}</AppText>
+            <AppText style={styles.detailsLabel}>Payment Status:</AppText>
+            <AppText style={styles.detailsValue}>Mock paid on preorder</AppText>
           </View>
 
           <Pressable 
             style={({ pressed }) => [
               styles.attachButton, 
-              proofAttached && styles.attachButtonSuccess,
+              paymentMarked && styles.attachButtonSuccess,
               pressed && { opacity: 0.75 }
             ]} 
-            onPress={() => setProofAttached(!proofAttached)}
+            onPress={() => setPaymentMarked(!paymentMarked)}
           >
-            <Ionicons name={proofAttached ? "checkmark-circle" : "cloud-upload-outline"} size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Ionicons name={paymentMarked ? "checkmark-circle" : "wallet-outline"} size={18} color="#fff" style={{ marginRight: 8 }} />
             <AppText style={styles.attachText}>
-              {proofAttached ? 'Payment Proof Attached' : 'Attach Proof of Payment'}
+              {paymentMarked ? 'Demo Payment Marked' : 'Mark Demo Payment'}
             </AppText>
           </Pressable>
         </View>
       </View>
 
-      <AppText style={styles.sectionTitle}>Shipping Address</AppText>
+      <AppText style={styles.sectionTitle}>Delivery Address</AppText>
       <View style={styles.addressCard}>
-        <AppText style={styles.addressTitle}>Home</AppText>
-        <AppText style={styles.addressText}>482 Fitness Way, Apt 4B, Manila, Philippines</AppText>
+        <AppText style={styles.addressTitle}>{user?.name || 'Customer'}</AppText>
+        <AppText style={styles.addressText}>{user?.address || 'No delivery address saved yet.'}</AppText>
       </View>
 
       <View style={styles.totalCard}>
@@ -245,7 +245,7 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
       >
         {loading
           ? <ActivityIndicator color="#ffffff" />
-          : <AppText style={[styles.confirmLabel, !canConfirm && styles.confirmLabelDisabled]}>{canConfirm ? 'Confirm & Pay →' : 'Preorder Locked'}</AppText>
+          : <AppText style={[styles.confirmLabel, !canConfirm && styles.confirmLabelDisabled]}>{canConfirm ? 'Place Preorder →' : 'Preorder Locked'}</AppText>
         }
       </Pressable>
     </ScrollView>

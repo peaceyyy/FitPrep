@@ -1,143 +1,214 @@
 import AppText from '../components/AppText';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, Pressable, TextInput, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
-import { fetchAllOrders } from '../services/ordersService';
+import { DELIVERY_STATUSES } from '../services/deliveryStatusService';
+import { fetchAllDailyDeliveries } from '../services/deliveriesService';
 
-const filterOptions = ['All', 'Paid (Mock)'];
-
-export default function AdminOrdersScreen({ onBack }) {
-  const [orders, setOrders] = useState([]);
+export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
+  const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchText, setSearchText] = useState('');
-  const [filter, setFilter] = useState('All');
 
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await fetchAllOrders();
-      if (!error) setOrders(data || []);
-      setLoading(false);
-    })();
+  const loadDeliveries = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    const { data, error: fetchError } = await fetchAllDailyDeliveries();
+    if (fetchError) {
+      setDeliveries([]);
+      setError(fetchError.message || 'Could not load delivery orders.');
+    } else {
+      setDeliveries(data || []);
+    }
+    setLoading(false);
   }, []);
 
-  const filtered = useMemo(() => {
-    return orders.filter((order) => {
-      const lower = searchText.toLowerCase();
-      const planName = order.published_weekly_plans?.name?.toLowerCase() || '';
-      const matchesSearch = order.id.toLowerCase().includes(lower) || planName.includes(lower);
-      const matchesFilter = filter === 'All' || order.status === filter;
-      return matchesSearch && matchesFilter;
+  useEffect(() => {
+    loadDeliveries();
+    return () => {};
+  }, [loadDeliveries]);
+
+  const groupedOrders = useMemo(() => {
+    const map = {};
+    deliveries.forEach(delivery => {
+      const wid = delivery.weekly_order_id;
+      if (!map[wid]) {
+        map[wid] = {
+          id: wid,
+          user: delivery.user,
+          user_id: delivery.user_id,
+          order: delivery.weekly_orders || {},
+          deliveries: [],
+        };
+      }
+      map[wid].deliveries.push(delivery);
     });
-  }, [orders, searchText, filter]);
+    return Object.values(map);
+  }, [deliveries]);
 
-  const formatDate = (isoStr) => {
-    if (!isoStr) return '';
-    return new Date(isoStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const filtered = useMemo(() => {
+    const lower = searchText.trim().toLowerCase();
+    return groupedOrders.filter((group) => {
+      const plan = group.order.plan_snapshot || group.order.published_weekly_plans || {};
+      const userName = group.user?.full_name || '';
+      const haystack = [
+        group.id,
+        group.user_id,
+        userName,
+        plan.name,
+        plan.category,
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return !lower || haystack.includes(lower);
+    });
+  }, [groupedOrders, searchText]);
+
+  const summary = useMemo(() => {
+    let completedOrders = 0;
+    groupedOrders.forEach(group => {
+      const allDelivered = group.deliveries.length > 0 && group.deliveries.every(d => d.current_status === DELIVERY_STATUSES.DELIVERED);
+      if (allDelivered) completedOrders++;
+    });
+    return {
+      active: groupedOrders.length - completedOrders,
+      completed: completedOrders,
+      total: groupedOrders.length,
+    };
+  }, [groupedOrders]);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(`${dateStr}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const formatPrice = (value) => {
-    const amount = Number(value);
-    return Number.isNaN(amount) ? '₱--' : `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+  const renderOrderGroup = ({ item }) => {
+    const order = item.order || {};
+    const plan = order.plan_snapshot || order.published_weekly_plans || {};
+    const userName = item.user?.full_name || 'Customer ' + (item.user_id?.slice(0, 8) || 'Unknown');
+    const userLocation = item.user?.address || 'No location provided';
+    
+    // Sort deliveries by date
+    const sortedDeliveries = [...item.deliveries].sort((a, b) => a.delivery_date.localeCompare(b.delivery_date));
+    const firstDelivery = sortedDeliveries[0];
+    const lastDelivery = sortedDeliveries[sortedDeliveries.length - 1];
+    const dateRange = firstDelivery && lastDelivery 
+      ? `${formatDate(firstDelivery.delivery_date)} - ${formatDate(lastDelivery.delivery_date)}`
+      : 'N/A';
+
+    const deliveredCount = item.deliveries.filter(d => d.current_status === DELIVERY_STATUSES.DELIVERED).length;
+    const progress = `${deliveredCount}/${item.deliveries.length} Delivered`;
+
+    return (
+      <Pressable
+        style={({ pressed }) => [styles.deliveryCard, pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] }]}
+        onPress={() => onOpenDeliveryDetails?.(item)}
+      >
+        <View style={styles.cardHead}>
+          <View style={styles.cardHeadText}>
+            <AppText style={styles.customerLabel}>{userName}</AppText>
+            <AppText style={styles.planName}>{plan.name || 'Weekly plan'}</AppText>
+            <AppText style={styles.planMeta}>{plan.category || 'Meal plan'} • Order #{item.id?.slice(0, 8)}</AppText>
+            <AppText style={styles.locationText}>📍 {userLocation}</AppText>
+          </View>
+          <View style={styles.pillBadge}>
+            <AppText style={styles.pillBadgeText}>Details</AppText>
+          </View>
+        </View>
+
+        <View style={styles.detailGrid}>
+          <View style={styles.detailCell}>
+            <AppText style={styles.detailLabel}>Schedule</AppText>
+            <AppText style={styles.detailValue}>{dateRange}</AppText>
+          </View>
+          <View style={styles.detailCell}>
+            <AppText style={styles.detailLabel}>Progress</AppText>
+            <AppText style={styles.detailValue}>{progress}</AppText>
+          </View>
+        </View>
+      </Pressable>
+    );
   };
 
-  const getStatusColor = (status) => {
-    const s = (status || '').toLowerCase();
-    if (s.includes('paid') || s.includes('delivered')) return { bg: '#dff4da', text: COLORS.accent };
-    if (s.includes('pending')) return { bg: '#fff0db', text: '#d97706' };
-    if (s.includes('cancelled') || s.includes('failed')) return { bg: '#fbeaea', text: COLORS.danger };
-    return { bg: '#f0f1ea', text: COLORS.textSecondary };
-  };
+  const renderHeader = () => (
+    <View>
+      <HeaderBar title="Delivery Orders" action={{ icon: 'refresh-cw', onPress: loadDeliveries }} onBack={onBack} />
 
-  const getOrderPlan = (order) => order.plan_snapshot || order.published_weekly_plans || {};
+      <View style={styles.pillSummaryRow}>
+        <View style={[styles.pillSummary, { backgroundColor: '#eef7dd', borderColor: COLORS.accent }]}>
+          <AppText style={[styles.pillSummaryLabel, { color: COLORS.accent }]}>Active: {summary.active}</AppText>
+        </View>
+        <View style={[styles.pillSummary, { backgroundColor: '#f0f1ea', borderColor: COLORS.border }]}>
+          <AppText style={[styles.pillSummaryLabel, { color: COLORS.textSecondary }]}>Completed: {summary.completed}</AppText>
+        </View>
+        <View style={[styles.pillSummary, { backgroundColor: '#f0f1ea', borderColor: COLORS.border }]}>
+          <AppText style={[styles.pillSummaryLabel, { color: COLORS.textSecondary }]}>Total: {summary.total}</AppText>
+        </View>
+      </View>
 
-  return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Order Management" action={{ icon: 'refresh-cw', onPress: () => {} }} onBack={onBack} />
-
-      <AppText style={styles.sectionTitle}>All Orders</AppText>
       <TextInput
         value={searchText}
         onChangeText={setSearchText}
-        placeholder="Search by order ID or plan name..."
+        placeholder="Search order, customer, plan..."
         placeholderTextColor={COLORS.textTertiary}
         style={styles.searchInput}
       />
+    </View>
+  );
 
-      <View style={styles.filtersRow}>
-        {filterOptions.map((option) => (
-          <Pressable
-            key={option}
-            style={({ pressed }) => [styles.filterChip, filter === option && styles.filterChipActive, pressed && { opacity: 0.75 }]}
-            onPress={() => setFilter(option)}
-          >
-            <AppText style={[styles.filterLabel, filter === option && styles.filterLabelActive]}>{option}</AppText>
-          </Pressable>
-        ))}
-      </View>
-
-      {loading && <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 24 }} />}
-
-      {!loading && filtered.length === 0 && (
+  return (
+    <FlatList
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      data={loading || error ? [] : filtered}
+      keyExtractor={(item) => item.id}
+      renderItem={renderOrderGroup}
+      ListHeaderComponent={renderHeader}
+      ListFooterComponent={<View style={styles.footerSpacer} />}
+      ListEmptyComponent={loading ? (
+        <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 24 }} />
+      ) : error ? (
         <View style={styles.emptyState}>
-          <AppText style={styles.emptyText}>No orders found.</AppText>
+          <AppText style={styles.emptyTitle}>Delivery orders unavailable</AppText>
+          <AppText style={styles.emptyText}>{error}</AppText>
+          <Pressable style={styles.retryButton} onPress={loadDeliveries}>
+            <AppText style={styles.retryButtonText}>Retry</AppText>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.emptyState}>
+          <AppText style={styles.emptyText}>No orders match your search.</AppText>
         </View>
       )}
-
-      {filtered.map((order) => (
-        <View key={order.id} style={styles.orderCard}>
-          {(() => {
-            const orderPlan = getOrderPlan(order);
-            const amountPaid = order.amount_paid ?? orderPlan.weekly_price;
-            return (
-              <>
-                <View style={styles.orderHead}>
-                  <AppText style={styles.orderId}>#{order.id.slice(0, 8).toUpperCase()}</AppText>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status).bg }]}>
-                    <AppText style={[styles.statusText, { color: getStatusColor(order.status).text }]}>{order.status?.toUpperCase()}</AppText>
-                  </View>
-                </View>
-                <AppText style={styles.orderPlan}>{orderPlan.name || '—'}</AppText>
-                <AppText style={styles.orderCategory}>{orderPlan.category}</AppText>
-                <View style={styles.paymentMetaRow}>
-                  <AppText style={styles.paymentMeta}>{order.payment_method || 'GCash'}</AppText>
-                  <AppText style={styles.paymentMeta}>{order.delivery_time || '--:--'}</AppText>
-                </View>
-                <View style={styles.orderFooter}>
-                  <AppText style={styles.orderDate}>{formatDate(order.created_at)}</AppText>
-                  <AppText style={styles.orderPrice}>{formatPrice(amountPaid)}</AppText>
-                </View>
-              </>
-            );
-          })()}
-        </View>
-      ))}
-    </ScrollView>
+    />
   );
 }
 
 const styles = StyleSheet.create({
   root: { backgroundColor: COLORS.background },
   content: { padding: 20, paddingBottom: 120 },
-  sectionTitle: { color: COLORS.brand, fontSize: 24, fontWeight: '900', marginBottom: 16 },
-  searchInput: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: COLORS.border, color: COLORS.brand },
-  filtersRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 18 },
-  filterChip: { backgroundColor: COLORS.surface, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 16, borderWidth: 1, borderColor: COLORS.border, marginRight: 10, marginBottom: 10 },
-  filterChipActive: { backgroundColor: '#eef7dd', borderColor: COLORS.accent },
-  filterLabel: { color: COLORS.brand, fontWeight: '700' },
-  filterLabelActive: { color: COLORS.accent },
+  pillSummaryRow: { flexDirection: 'row', marginBottom: 14, gap: 8 },
+  pillSummary: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1 },
+  pillSummaryLabel: { fontSize: 13, fontWeight: '700' },
+  searchInput: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: COLORS.border, color: COLORS.brand },
   emptyState: { backgroundColor: COLORS.surface, borderRadius: 20, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
+  emptyTitle: { color: COLORS.brand, fontSize: 17, fontWeight: '900', marginBottom: 8 },
   emptyText: { color: COLORS.textSecondary, fontSize: 15 },
-  orderCard: { backgroundColor: COLORS.surface, borderRadius: 24, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: COLORS.border },
-  orderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  orderId: { color: COLORS.muted, fontSize: 12, fontWeight: '700' },
-  statusBadge: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: '#dff4da' },
-  statusText: { color: COLORS.brand, fontSize: 11, fontWeight: '800' },
-  orderPlan: { color: COLORS.brand, fontSize: 18, fontWeight: '900', marginBottom: 4 },
-  orderCategory: { color: COLORS.accent, fontWeight: '700', fontSize: 13, marginBottom: 10 },
-  paymentMetaRow: { flexDirection: 'row', marginBottom: 10 },
-  paymentMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '800', backgroundColor: '#f4f7ef', borderRadius: 999, paddingVertical: 6, paddingHorizontal: 10, marginRight: 8 },
-  orderFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  orderDate: { color: COLORS.muted, fontSize: 12 },
-  orderPrice: { color: COLORS.brand, fontWeight: '800', fontSize: 15 },
+  retryButton: { minHeight: 44, marginTop: 16, borderRadius: 16, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand },
+  retryButtonText: { color: COLORS.surface, fontWeight: '800' },
+  deliveryCard: { backgroundColor: COLORS.surface, borderRadius: 22, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.border },
+  cardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 },
+  cardHeadText: { flex: 1, paddingRight: 10 },
+  customerLabel: { color: COLORS.brand, fontSize: 17, fontWeight: '900', marginBottom: 4 },
+  planName: { color: COLORS.brand, fontSize: 14, fontWeight: '800', marginBottom: 2 },
+  planMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
+  locationText: { color: COLORS.textSecondary, fontSize: 13, marginTop: 6, fontWeight: '600' },
+  pillBadge: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999, backgroundColor: '#f0f1ea' },
+  pillBadgeText: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '800' },
+  detailGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
+  detailCell: { width: '50%', marginBottom: 10 },
+  detailLabel: { color: COLORS.muted, fontSize: 11, fontWeight: '700', marginBottom: 3 },
+  detailValue: { color: COLORS.brand, fontSize: 14, fontWeight: '800' },
+  footerSpacer: { height: 12 },
 });

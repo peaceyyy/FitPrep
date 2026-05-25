@@ -54,7 +54,7 @@ export default function AdminUserDetailsScreen({ profileId, onBack }) {
     setShowPlanPicker(false);
     setSaving(true);
     try {
-      const { error: orderError } = await adminGrantDemoAccess(profile.id, selectedPlan.id);
+      const { error: orderError } = await adminGrantDemoAccess(profile.id, selectedPlan);
       
       if (orderError) throw orderError;
       

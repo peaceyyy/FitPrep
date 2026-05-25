@@ -21,6 +21,8 @@ export default function RegisterScreen({ onBack }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [address, setAddress] = useState('');
+  const [gcash, setGcash] = useState('');
   const [goal, setGoal] = useState('bulking');
   const [securePassword, setSecurePassword] = useState(true);
   const [secureConfirm, setSecureConfirm] = useState(true);
@@ -64,6 +66,29 @@ export default function RegisterScreen({ onBack }) {
             autoCapitalize="none"
             value={email}
             onChangeText={setEmail}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <AppText style={styles.fieldLabel}>Delivery Address</AppText>
+          <TextInput
+            style={styles.inputSolo}
+            placeholder="USC Talamban Campus (Default)"
+            placeholderTextColor={COLORS.textTertiary}
+            value={address}
+            onChangeText={setAddress}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <AppText style={styles.fieldLabel}>GCash Number</AppText>
+          <TextInput
+            style={styles.inputSolo}
+            placeholder="0992 867 7722 (Default)"
+            placeholderTextColor={COLORS.textTertiary}
+            keyboardType="phone-pad"
+            value={gcash}
+            onChangeText={setGcash}
           />
         </View>
 
@@ -152,6 +177,8 @@ export default function RegisterScreen({ onBack }) {
                 data: {
                   full_name: name,
                   goal: goal,
+                  address: address || 'USC Talamban Campus',
+                  gcash_number: gcash || '0992 867 7722',
                 }
               }
             });

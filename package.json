@@ -8,6 +8,7 @@
     "@supabase/supabase-js": "^2.49.1",
     "expo": "~56.0.4",
     "expo-font": "~56.0.5",
+    "expo-image-picker": "~56.0.13",
     "expo-status-bar": "~56.0.4",
     "react": "19.2.3",
     "react-native": "0.85.3"

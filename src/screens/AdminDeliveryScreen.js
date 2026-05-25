@@ -23,7 +23,7 @@ export default function AdminDeliveryScreen() {
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Delivery Tasks" action={{ icon: 'bell', onPress: () => {} }} />
+      <HeaderBar title="Delivery Tasks" />
 
       <AppText style={styles.sectionTitle}>ACTIVE TASKS</AppText>
       <View style={styles.summaryCard}>

@@ -225,8 +225,7 @@ export function PlansProvider({ children }) {
     const nextWeekHasPlans = state.plans.some((plan) => (
       isPlanPublished(plan) && plan.week_start_date === nextWeekStartDate
     ));
-    const canAdvance = state.browsingWeekStartDate < currentWeekStartDate
-      || (state.browsingWeekStartDate === currentWeekStartDate && nextWeekHasPlans);
+    const canAdvance = state.browsingWeekStartDate < currentWeekStartDate || nextWeekHasPlans;
 
     if (canAdvance) {
       dispatch({ type: 'SET_BROWSING_WEEK', weekStartDate: nextWeekStartDate });
@@ -261,8 +260,7 @@ export function PlansProvider({ children }) {
       isPlanPublished(plan) && plan.week_start_date === nextBrowsingWeekStartDate
     ));
 
-    return state.browsingWeekStartDate < currentWeekStartDate
-      || (state.browsingWeekStartDate === currentWeekStartDate && nextWeekHasPlans);
+    return state.browsingWeekStartDate < currentWeekStartDate || nextWeekHasPlans;
   }, [nextBrowsingWeekStartDate, state.browsingWeekStartDate, state.plans]);
 
   const preorderEligibility = useMemo(() => (

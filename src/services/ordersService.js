@@ -1,8 +1,10 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { DELIVERY_STATUSES, getDemoDeliveryStatus } from './deliveryStatusService';
 
 export const DELIVERY_TIME_OPTIONS = ['06:00', '10:00'];
 export const MOCK_PAYMENT_METHOD = 'GCash';
 export const MOCK_PAID_STATUS = 'Paid (Mock)';
+export const DEFAULT_DELIVERY_STATUS = DELIVERY_STATUSES.CONFIRMED;
 
 export function normalizeDeliveryTime(value) {
   if (value === '6:00 AM' || value === '06:00') return '06:00';
@@ -44,6 +46,77 @@ export function buildOrderPayload(userId, plan, options = {}) {
   };
 }
 
+function toDateOnly(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function fromDateOnly(dateString) {
+  return new Date(`${dateString}T00:00:00`);
+}
+
+export function getDeliveryDatesForWeek(weekStartDate) {
+  if (!weekStartDate) return [];
+
+  const startDate = fromDateOnly(weekStartDate);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + index);
+    return toDateOnly(date);
+  });
+}
+
+export function buildDailyDeliveryRows(order, plan, options = {}) {
+  const weekStartDate = plan?.week_start_date || order?.plan_snapshot?.week_start_date;
+  const deliveryTime = normalizeDeliveryTime(order?.delivery_time || options.deliveryTime);
+  const now = options.now || new Date();
+
+  if (!order?.id || !order?.user_id || !order?.plan_id || !weekStartDate || !deliveryTime) {
+    return [];
+  }
+
+  return getDeliveryDatesForWeek(weekStartDate).map((deliveryDate) => {
+    const delivery = {
+      weekly_order_id: order.id,
+      user_id: order.user_id,
+      plan_id: order.plan_id,
+      delivery_date: deliveryDate,
+      delivery_time: deliveryTime,
+      current_status: DEFAULT_DELIVERY_STATUS,
+    };
+
+    return {
+      ...delivery,
+      current_status: getDemoDeliveryStatus(delivery, now),
+    };
+  });
+}
+
+export async function createDailyDeliveriesForOrder(order, plan, options = {}) {
+  const rows = buildDailyDeliveryRows(order, plan, options);
+
+  if (rows.length === 0) {
+    return { data: [], error: new Error('Could not generate daily deliveries for this order.') };
+  }
+
+  if (!isSupabaseConfigured) {
+    return {
+      data: rows.map((row, index) => ({ id: `MOCK-DELIVERY-${Date.now()}-${index}`, ...row })),
+      error: null,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('daily_deliveries')
+    .upsert(rows, { onConflict: 'weekly_order_id,delivery_date' })
+    .select();
+
+  return { data: data || [], error };
+}
+
 /**
  * Places a new order for the given plan.
  * @param {string} userId - The authenticated user's UUID
@@ -72,25 +145,57 @@ export async function placeOrder(userId, plan, options = {}) {
     .select()
     .single();
 
+  if (error) {
+    return { data, error };
+  }
+
+  const { error: deliveriesError } = await createDailyDeliveriesForOrder(data, normalizedPlan, {
+    deliveryTime: payload.delivery_time,
+  });
+
+  if (deliveriesError) {
+    return { data, error: deliveriesError };
+  }
+
   return { data, error };
 }
 
 /**
  * Grants demo access to a plan for a user.
  * @param {string} userId - The UUID of the user
- * @param {string} planId - The UUID of the published_weekly_plan
+ * @param {object} plan - The published_weekly_plan object
  * @returns {{ data, error }}
  */
-export async function adminGrantDemoAccess(userId, planId) {
+export async function adminGrantDemoAccess(userId, plan) {
+  let payload;
+  try {
+    payload = buildOrderPayload(userId, plan, { deliveryTime: '06:00' });
+    payload.status = 'Demo Access'; // Override status for demo access
+  } catch (error) {
+    return { data: null, error };
+  }
+
   if (!isSupabaseConfigured) {
-    return { data: { id: `MOCK-${Date.now()}`, user_id: userId, plan_id: planId, status: 'Demo Access' }, error: null };
+    return { data: { id: `MOCK-${Date.now()}`, ...payload }, error: null };
   }
 
   const { data, error } = await supabase
     .from('weekly_orders')
-    .insert({ user_id: userId, plan_id: planId, status: 'Demo Access' })
+    .insert(payload)
     .select()
     .single();
+
+  if (error) {
+    return { data, error };
+  }
+
+  const { error: deliveriesError } = await createDailyDeliveriesForOrder(data, plan, {
+    deliveryTime: '06:00',
+  });
+
+  if (deliveriesError) {
+    return { data, error: deliveriesError };
+  }
 
   return { data, error };
 }

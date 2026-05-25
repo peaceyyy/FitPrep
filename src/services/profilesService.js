@@ -11,7 +11,7 @@ export const profilesService = {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching current profile:', error);
@@ -27,11 +27,12 @@ export const profilesService = {
   // Update current user's profile using the RPC
   async updateCurrentProfile(updates) {
     try {
-      const { full_name, goal, address } = updates;
+      const { full_name, goal, address, gcash_number } = updates;
       const { data, error } = await supabase.rpc('update_own_profile', {
         new_full_name: full_name,
         new_goal: goal,
-        new_address: address || null
+        new_address: address || null,
+        new_gcash_number: gcash_number || null,
       });
 
       if (error) {
@@ -76,7 +77,7 @@ export const profilesService = {
         .from('profiles')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
         
       if (error) {
         console.error('Error fetching profile:', error);

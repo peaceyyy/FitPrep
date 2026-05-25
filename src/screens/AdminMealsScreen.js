@@ -15,7 +15,6 @@ import {
   getPreviousWeekStartDate,
   normalizeDayLabel,
 } from '../services/plansService';
-import { fetchAllOrders } from '../services/ordersService';
 
 const CATEGORY_FILTERS = [
   { key: 'all', label: 'All' },
@@ -61,10 +60,6 @@ function getReadiness(meals = []) {
   };
 }
 
-function orderWeekStart(order) {
-  return order?.published_weekly_plans?.week_start_date || '';
-}
-
 export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPlan, onBack }) {
   const { plans, loading, error, source, removePlan } = usePlans();
   const [adminWeekStartDate, setAdminWeekStartDate] = useState(currentWeekStartDate);
@@ -72,8 +67,6 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [mealSnapshots, setMealSnapshots] = useState({});
-  const [orders, setOrders] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
 
   const weekPlans = useMemo(() => (
     plans
@@ -90,10 +83,6 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
       return matchesCategory && matchesStatus;
     })
   ), [selectedCategory, selectedStatus, weekPlans]);
-
-  const weekOrders = useMemo(() => (
-    orders.filter((order) => orderWeekStart(order) === adminWeekStartDate)
-  ), [adminWeekStartDate, orders]);
 
   const weekReadiness = useMemo(() => {
     if (weekPlans.length === 0) {
@@ -141,25 +130,6 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
       cancelled = true;
     };
   }, [weekPlans]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadOrders() {
-      setOrdersLoading(true);
-      const { data } = await fetchAllOrders();
-      if (!cancelled) {
-        setOrders(data || []);
-        setOrdersLoading(false);
-      }
-    }
-
-    loadOrders();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const showPreviousWeek = () => {
     setAdminWeekStartDate((weekStartDate) => getPreviousWeekStartDate(weekStartDate));
@@ -243,7 +213,7 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
 
   const ListHeader = (
     <>
-      <HeaderBar title="Manage Meals" action={{ icon: 'bell', onPress: () => {} }} onBack={onBack} />
+      <HeaderBar title="Manage Plans" onBack={onBack} />
 
       <AppText style={styles.subHeading}>ADMINISTRATION</AppText>
       <View style={styles.titleRow}>
@@ -252,7 +222,8 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
           <AppText style={styles.titleMeta}>{source === 'supabase' ? 'Live Supabase data' : 'Mock fallback data'}</AppText>
         </View>
         <Pressable style={({ pressed }) => [styles.createButton, pressed && styles.pressed]} onPress={() => handleCreatePlan()}>
-          <AppText style={styles.createButtonText}>Create Week Plan</AppText>
+          <Feather name="plus" size={16} color={COLORS.surface} />
+          <AppText style={styles.createButtonText}>Plan</AppText>
         </Pressable>
       </View>
 
@@ -277,44 +248,22 @@ export default function AdminMealsScreen({ onCreateMeal, onCreatePlan, onEditPla
         <AppText style={styles.navHint}>Future planning is capped at the next 4 weeks for this admin view.</AppText>
       )}
 
-      <View style={styles.summaryGrid}>
-        <View style={styles.summaryCard}>
-          <AppText style={styles.summaryValue}>{weekPlans.length}</AppText>
-          <AppText style={styles.summaryLabel}>Plans</AppText>
-        </View>
-        <View style={styles.summaryCard}>
-          <AppText style={styles.summaryValue}>{weekReadiness.readyPlans}/{weekReadiness.totalPlans}</AppText>
-          <AppText style={styles.summaryLabel}>Ready</AppText>
-        </View>
-        <View style={styles.summaryCard}>
-          <AppText style={styles.summaryValue}>{ordersLoading ? '...' : weekOrders.length}</AppText>
-          <AppText style={styles.summaryLabel}>Orders</AppText>
-        </View>
-      </View>
-
-      <View style={styles.filterBar}>
-        <View style={styles.filterCopy}>
-          <AppText style={styles.filterSummary}>Filters: {selectedCategoryLabel} / {selectedStatusLabel}</AppText>
-          <AppText style={styles.filterMeta}>{filteredPlans.length} of {weekPlans.length} plans shown</AppText>
+      <View style={styles.sectionTitleRow}>
+        <View>
+          <AppText style={styles.sectionTitle}>Plans This Week</AppText>
+          <AppText style={styles.sectionMeta}>{filteredPlans.length} shown {activeFilterCount > 0 ? `• ${selectedCategoryLabel}/${selectedStatusLabel}` : ''}</AppText>
         </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Open plan filters"
-          style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.smallFilterButton, pressed && styles.pressed]}
           onPress={() => setFilterSheetVisible(true)}
         >
-          <Feather name="filter" size={18} color={COLORS.brand} />
+          <Feather name="filter" size={16} color={COLORS.brand} />
           {activeFilterCount > 0 && (
-            <View style={styles.filterBadge}>
-              <AppText style={styles.filterBadgeText}>{activeFilterCount}</AppText>
-            </View>
+            <View style={styles.smallFilterBadge} />
           )}
         </Pressable>
-      </View>
-
-      <View style={styles.sectionTitleRow}>
-        <AppText style={styles.sectionTitle}>Plans This Week</AppText>
-        <AppText style={styles.sectionMeta}>{filteredPlans.length} shown</AppText>
       </View>
     </>
   );
@@ -455,8 +404,8 @@ const styles = StyleSheet.create({
   titleCopy: { flex: 1, paddingRight: 12 },
   title: { color: COLORS.brand, fontSize: 28, fontWeight: '900', marginBottom: 6 },
   titleMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
-  createButton: { minHeight: 48, maxWidth: 148, borderRadius: 16, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand },
-  createButtonText: { color: COLORS.surface, fontWeight: '900', fontSize: 12, textAlign: 'center' },
+  createButton: { minHeight: 44, borderRadius: 16, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', backgroundColor: COLORS.brand },
+  createButtonText: { color: COLORS.surface, fontWeight: '900', fontSize: 12, textAlign: 'center', marginLeft: 5 },
   weekNavigator: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   weekArrow: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border },
   weekArrowDisabled: { opacity: 0.45 },
@@ -466,20 +415,11 @@ const styles = StyleSheet.create({
   weekKicker: { color: COLORS.accent, fontSize: 11, fontWeight: '900', marginBottom: 2, textTransform: 'uppercase' },
   weekRangeText: { color: COLORS.brand, fontSize: 18, fontWeight: '900' },
   navHint: { color: COLORS.muted, fontSize: 12, lineHeight: 17, marginBottom: 14 },
-  summaryGrid: { flexDirection: 'row', marginBottom: 14 },
-  summaryCard: { flex: 1, minHeight: 76, backgroundColor: COLORS.surface, borderRadius: 18, borderWidth: 1, borderColor: COLORS.border, padding: 14, marginRight: 10 },
-  summaryValue: { color: COLORS.brand, fontSize: 22, fontWeight: '900', marginBottom: 4 },
-  summaryLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '800' },
-  filterBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.surface, borderRadius: 18, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 10, paddingLeft: 14, paddingRight: 10, marginBottom: 16 },
-  filterCopy: { flex: 1, paddingRight: 12 },
-  filterSummary: { color: COLORS.brand, fontSize: 13, fontWeight: '900', marginBottom: 3 },
-  filterMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
-  filterButton: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#edf7d7', borderWidth: 1, borderColor: '#d9ebaf' },
-  filterBadge: { position: 'absolute', top: 6, right: 6, minWidth: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand },
-  filterBadgeText: { color: COLORS.surface, fontSize: 10, fontWeight: '900' },
-  sectionTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12, marginTop: 4 },
   sectionTitle: { color: COLORS.brand, fontSize: 18, fontWeight: '900' },
-  sectionMeta: { color: COLORS.muted, fontSize: 12, fontWeight: '800' },
+  sectionMeta: { color: COLORS.muted, fontSize: 12, fontWeight: '800', marginTop: 2 },
+  smallFilterButton: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#edf7d7', borderWidth: 1, borderColor: '#d9ebaf' },
+  smallFilterBadge: { position: 'absolute', top: -2, right: -2, width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.brand, borderWidth: 1, borderColor: COLORS.surface },
   planCard: { backgroundColor: COLORS.surface, borderRadius: 22, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 14 },
   planTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
   categoryMark: { width: 52, height: 52, borderRadius: 18, backgroundColor: '#e8ecdf', alignItems: 'center', justifyContent: 'center', marginRight: 12 },

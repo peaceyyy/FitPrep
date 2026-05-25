@@ -135,10 +135,12 @@ export function getPreorderEligibility({
     };
   }
 
-  if (browsingWeekStartDate !== nextWeekStartDate) {
+  // Block preorders for the current week or any past week.
+  // Any future week with a published plan is fair game.
+  if (browsingWeekStartDate <= currentWeekStartDate) {
     return {
       canPreorder: false,
-      reason: 'Preorders are for the upcoming Monday-Sunday meal week.',
+      reason: 'Preorders are only available for upcoming weeks.',
       targetWeekStartDate: nextWeekStartDate,
     };
   }
@@ -147,14 +149,14 @@ export function getPreorderEligibility({
     return {
       canPreorder: false,
       reason: 'You already have a preorder for this week.',
-      targetWeekStartDate: nextWeekStartDate,
+      targetWeekStartDate: browsingWeekStartDate,
     };
   }
 
   return {
     canPreorder: true,
     reason: 'Preorders are open for this published weekly plan.',
-    targetWeekStartDate: nextWeekStartDate,
+    targetWeekStartDate: browsingWeekStartDate,
   };
 }
 

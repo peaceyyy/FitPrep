@@ -5,13 +5,70 @@ import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 
 const starLabels = ['Terrible', 'Bad', 'Okay', 'Good', 'Excellent'];
+const metricLabels = {
+  freshness: 'Freshness',
+  portion: 'Portion',
+  variety: 'Variety',
+};
 
 export default function ReviewScreen({ order, onBack, onSubmit }) {
   const [rating, setRating] = useState(4);
   const [comment, setComment] = useState('');
+  const [metrics, setMetrics] = useState({
+    freshness: 4,
+    portion: 4,
+    variety: 3,
+  });
 
   const planName = order?.published_weekly_plans?.name || 'Your Weekly Plan';
   const orderId = order?.id?.substring(0, 8).toUpperCase() || 'XXXXXXXX';
+
+  const handleMetricChange = (metric, value) => {
+    setMetrics((prev) => ({ ...prev, [metric]: value }));
+  };
+
+  const handleSubmit = () => {
+    onSubmit({
+      rating,
+      comment,
+      metrics,
+    });
+  };
+
+  const renderMetric = (metric) => {
+    const value = metrics[metric];
+
+    return (
+      <View key={metric} style={styles.metricCard}>
+        <View style={styles.metricHeader}>
+          <AppText style={styles.metricTitle}>{metricLabels[metric]}</AppText>
+          <AppText style={styles.metricValue}>{value}/5</AppText>
+        </View>
+        <View style={styles.metricOptions}>
+          {[1, 2, 3, 4, 5].map((option) => {
+            const active = value === option;
+            return (
+              <Pressable
+                key={option}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  styles.metricOption,
+                  active && styles.metricOptionActive,
+                  pressed && { opacity: 0.75 },
+                ]}
+                onPress={() => handleMetricChange(metric, option)}
+              >
+                <AppText style={[styles.metricOptionText, active && styles.metricOptionTextActive]}>{option}</AppText>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={styles.metricTrack}>
+          <View style={[styles.metricFill, { width: `${value * 20}%` }]} />
+        </View>
+      </View>
+    );
+  };
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
@@ -49,25 +106,13 @@ export default function ReviewScreen({ order, onBack, onSubmit }) {
         />
       </View>
 
-      <View style={styles.metricsRow}>
-        <View style={styles.metricCard}>
-          <AppText style={styles.metricTitle}>Freshness</AppText>
-          <View style={styles.metricTrack}>
-            <View style={[styles.metricFill, { width: `${rating * 20}%` }]} />
-          </View>
-          <AppText style={styles.metricValue}>{(rating * 1.2).toFixed(1)}</AppText>
-        </View>
-        <View style={[styles.metricCard, styles.metricSpacing]}>
-          <AppText style={styles.metricTitle}>Portion</AppText>
-          <View style={styles.metricTrack}>
-            <View style={[styles.metricFill, { width: `${Math.min(rating * 18, 100)}%` }]} />
-          </View>
-          <AppText style={styles.metricValue}>{(rating * 1.0).toFixed(1)}</AppText>
-        </View>
+      <View style={styles.metricsCard}>
+        <AppText style={styles.commentLabel}>Quick scores</AppText>
+        {Object.keys(metricLabels).map(renderMetric)}
       </View>
 
-      <Pressable style={styles.submitButton} onPress={() => onSubmit({ rating, comment })}>
-        <AppText style={styles.submitLabel}>Submit Review →</AppText>
+      <Pressable style={styles.submitButton} onPress={handleSubmit}>
+        <AppText style={styles.submitLabel}>Submit Demo Review →</AppText>
       </Pressable>
     </ScrollView>
   );
@@ -162,24 +207,49 @@ const styles = StyleSheet.create({
     color: COLORS.brand,
     textAlignVertical: 'top',
   },
-  metricsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 18,
-  },
-  metricCard: {
-    flex: 1,
+  metricsCard: {
     backgroundColor: COLORS.surface,
     borderRadius: 22,
     padding: 16,
+    marginBottom: 18,
   },
-  metricSpacing: {
-    marginLeft: 12,
+  metricCard: {
+    marginTop: 12,
+  },
+  metricHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   metricTitle: {
     color: COLORS.muted,
-    marginBottom: 10,
     fontWeight: '700',
+  },
+  metricOptions: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  metricOption: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eef3e4',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginRight: 8,
+  },
+  metricOptionActive: {
+    backgroundColor: COLORS.brand,
+    borderColor: COLORS.brand,
+  },
+  metricOptionText: {
+    color: COLORS.brand,
+    fontWeight: '800',
+  },
+  metricOptionTextActive: {
+    color: COLORS.surface,
   },
   metricTrack: {
     height: 8,

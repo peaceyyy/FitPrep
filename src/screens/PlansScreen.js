@@ -128,7 +128,7 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
       {!loading && !hasPlansThisWeek && !error && (
         <View style={styles.emptyState}>
           <AppText style={styles.emptyTitle}>Hold your gains.</AppText>
-          <AppText style={styles.emptyText}>No menu has been published for this week yet. Check back on Saturday — that's when new plans drop.</AppText>
+          <AppText style={styles.emptyText}>No menu has been published for this week yet. Sunday is the usual planning checkpoint, but menus appear here as soon as they are published.</AppText>
         </View>
       )}
 

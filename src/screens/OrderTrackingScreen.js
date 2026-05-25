@@ -1,13 +1,13 @@
 import AppText from '../components/AppText';
 import React from 'react';
-import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 
 export default function OrderTrackingScreen({ onBack }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Track Order" onBack={onBack} action={{ icon: 'help-circle', onPress: () => {} }} />
+      <HeaderBar title="Track Order" onBack={onBack} />
 
       <View style={styles.card}>
         <AppText style={styles.statusLabel}>CURRENT DELIVERY</AppText>
@@ -51,27 +51,11 @@ export default function OrderTrackingScreen({ onBack }) {
           </View>
           <AppText style={styles.timelineTime}>In Progress</AppText>
         </View>
-        <View style={styles.timelineFooter}>
-          <View style={styles.mapPlaceholder} />
-          <View style={styles.routePartner}>
-            <View style={styles.partnerAvatar} />
-            <View>
-              <AppText style={styles.partnerName}>Marcus J.</AppText>
-              <AppText style={styles.partnerDetail}>Your Delivery Partner</AppText>
-            </View>
-            <Pressable style={styles.callButton} onPress={() => {}}>
-              <AppText style={styles.callButtonText}>📞</AppText>
-            </Pressable>
-          </View>
-        </View>
       </View>
 
       <View style={styles.helpCard}>
-        <AppText style={styles.helpHeading}>Need help with this order?</AppText>
-        <AppText style={styles.helpText}>Our wellness experts are online</AppText>
-        <Pressable style={styles.helpButton} onPress={() => {}}>
-          <AppText style={styles.helpButtonText}>Chat Now</AppText>
-        </Pressable>
+        <AppText style={styles.helpHeading}>Delivery tracking moved</AppText>
+        <AppText style={styles.helpText}>Use My Deliveries for the current Supabase-backed preorder and daily delivery status demo.</AppText>
       </View>
     </ScrollView>
   );
@@ -210,51 +194,6 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     fontSize: 12,
   },
-  timelineFooter: {
-    marginTop: 10,
-  },
-  mapPlaceholder: {
-    height: 160,
-    borderRadius: 20,
-    backgroundColor: '#e9f3da',
-    marginBottom: 16,
-  },
-  routePartner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f6f9ec',
-    borderRadius: 20,
-    padding: 14,
-  },
-  partnerAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: '#d6e6bd',
-    marginRight: 12,
-  },
-  partnerName: {
-    fontWeight: '800',
-    color: COLORS.brand,
-    marginBottom: 2,
-  },
-  partnerDetail: {
-    color: COLORS.muted,
-    fontSize: 12,
-  },
-  callButton: {
-    marginLeft: 'auto',
-    backgroundColor: COLORS.brand,
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  callButtonText: {
-    color: COLORS.surface,
-    fontSize: 18,
-  },
   helpCard: {
     backgroundColor: COLORS.brand,
     borderRadius: 26,
@@ -269,17 +208,5 @@ const styles = StyleSheet.create({
   helpText: {
     color: '#dde8d3',
     lineHeight: 20,
-    marginBottom: 18,
-  },
-  helpButton: {
-    backgroundColor: '#d7f16a',
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  helpButtonText: {
-    color: COLORS.brand,
-    fontWeight: '800',
-    fontSize: 15,
   },
 });

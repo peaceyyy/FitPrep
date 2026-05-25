@@ -13,7 +13,7 @@ const recent = [
 export default function AdminOverviewScreen({ onCreateMeal }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Dashboard Overview" action={{ icon: 'settings', onPress: () => {} }} />
+      <HeaderBar title="Dashboard Overview" />
 
       <AppText style={styles.sectionTitle}>Operational Snapshot</AppText>
 
@@ -31,7 +31,7 @@ export default function AdminOverviewScreen({ onCreateMeal }) {
       <View style={styles.revenueCard}>
         <AppText style={styles.statLabel}>Total Revenue</AppText>
         <AppText style={styles.revenueValue}>₱124,510</AppText>
-        <View style={styles.graphPlaceholder}><AppText style={styles.graphText}>[Revenue graph]</AppText></View>
+        <View style={styles.graphPlaceholder}><AppText style={styles.graphText}>Use the main Dashboard for live demo totals.</AppText></View>
       </View>
 
       <View style={styles.quickActions}>

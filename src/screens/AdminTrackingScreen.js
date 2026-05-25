@@ -7,7 +7,7 @@ import { COLORS } from '../theme';
 export default function AdminTrackingScreen({ onBack }) {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Admin Tracking" onBack={onBack} action={{ icon: 'map-pin', onPress: () => {} }} />
+      <HeaderBar title="Admin Tracking" onBack={onBack} />
 
       <View style={styles.card}>
         <AppText style={styles.statusLabel}>CURRENT VIEW</AppText>

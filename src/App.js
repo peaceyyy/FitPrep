@@ -26,6 +26,7 @@ import CheckoutScreen from './screens/CheckoutScreen';
 import ReviewScreen from './screens/ReviewScreen';
 import WeeklyPlanScreen from './screens/WeeklyPlanScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
+import AdminDeliveryDetailsScreen from './screens/AdminDeliveryDetailsScreen';
 import BottomNav from './components/BottomNav';
 import AdminBottomNav from './components/AdminBottomNav';
 import { COLORS } from './theme';
@@ -49,6 +50,10 @@ export default function App() {
     email: '',
     goal: 'bulking',
     role: 'customer',
+    address: '',
+    avatar_url: null,
+    contactNumber: '',
+    created_at: null,
   });
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [adminMealPlanId, setAdminMealPlanId] = useState(null);
@@ -56,6 +61,7 @@ export default function App() {
   const [editSection, setEditSection] = useState('Personal Information');
   const [selectedAdminUserId, setSelectedAdminUserId] = useState(null);
   const [reviewOrder, setReviewOrder] = useState(null);
+  const [selectedAdminDelivery, setSelectedAdminDelivery] = useState(null);
 
   const route = history[history.length - 1];
 
@@ -114,12 +120,22 @@ export default function App() {
     // Default fallbacks from user_metadata
     let fullName = session.user.user_metadata?.full_name || (role === 'admin' ? 'FitFood Admin' : 'Customer');
     let goal = session.user.user_metadata?.goal || 'bulking';
+    let address = session.user.user_metadata?.address || '';
+    let createdAt = session.user.created_at || null;
+    const avatarUrl = session.user.user_metadata?.avatar_url || null;
+    let contactNumber = session.user.user_metadata?.gcash_number
+      || session.user.user_metadata?.contact_number
+      || session.user.phone
+      || '';
     
     // Hydrate from public profiles table
     const profile = await profilesService.getCurrentProfile();
     if (profile) {
       if (profile.full_name) fullName = profile.full_name;
       if (profile.goal) goal = profile.goal;
+      if (profile.address) address = profile.address;
+      if (profile.gcash_number) contactNumber = profile.gcash_number;
+      if (profile.created_at) createdAt = profile.created_at;
     }
 
     setUser((prev) => ({
@@ -129,6 +145,10 @@ export default function App() {
       email: session.user.email,
       name: fullName,
       goal: goal,
+      address,
+      avatar_url: avatarUrl || prev.avatar_url || null,
+      contactNumber,
+      created_at: createdAt,
     }));
     
     // Ensure we route to the appropriate home if currently on login or register
@@ -148,6 +168,32 @@ export default function App() {
       setHistory(['login']);
     }
   };
+
+  const handleUpdateUser = async (updates) => {
+    setUser((prev) => ({ ...prev, ...updates }));
+
+    if (!supabase) {
+      return;
+    }
+
+    const metadata = {
+      ...(updates.name ? { full_name: updates.name } : {}),
+      ...(updates.goal ? { goal: updates.goal } : {}),
+      ...(updates.avatar_url ? { avatar_url: updates.avatar_url } : {}),
+      ...(updates.address !== undefined ? { address: updates.address } : {}),
+      ...(updates.contactNumber !== undefined ? { gcash_number: updates.contactNumber } : {}),
+    };
+
+    if (Object.keys(metadata).length === 0) {
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({ data: metadata });
+    if (error) {
+      console.log('[App] Failed to save user metadata:', error.message);
+    }
+  };
+
   const handleOpenCheckout = (plan) => {
     setSelectedPlan(plan);
     navigateTo('checkout');
@@ -189,6 +235,7 @@ export default function App() {
         return <ProfileScreen 
           user={user} 
           onLogout={handleLogout} 
+          onUpdateUser={handleUpdateUser}
           onEditProfile={(section) => { setEditSection(section); navigateTo('editProfile'); }}
           onBack={history.length > 1 ? navigateBack : null} 
         />;
@@ -202,10 +249,16 @@ export default function App() {
               full_name: updates.name,
               goal: updates.goal,
               address: updates.address,
+              gcash_number: updates.contactNumber,
             });
             if (success) {
               // Refresh user state
-              setUser(prev => ({ ...prev, name: updates.name, goal: updates.goal, address: updates.address }));
+              await handleUpdateUser({
+                name: updates.name,
+                goal: updates.goal,
+                address: updates.address,
+                contactNumber: updates.contactNumber,
+              });
               navigateBack();
             } else {
               alert('Failed to update profile');
@@ -221,7 +274,9 @@ export default function App() {
       case 'adminHome':
         return <AdminDashboardScreen user={user} onLogout={handleLogout} onBack={history.length > 1 ? navigateBack : null} />;
       case 'adminOrders':
-        return <AdminOrdersScreen onBack={history.length > 1 ? navigateBack : null} />;
+        return <AdminOrdersScreen onOpenDeliveryDetails={(orderGroup) => { setSelectedAdminDelivery(orderGroup); navigateTo('adminDeliveryDetails'); }} onBack={history.length > 1 ? navigateBack : null} />;
+      case 'adminDeliveryDetails':
+        return <AdminDeliveryDetailsScreen orderGroup={selectedAdminDelivery} onBack={navigateBack} />;
       case 'adminMeals':
         return (
           <AdminMealsScreen

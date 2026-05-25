@@ -109,7 +109,7 @@ export default function HomeScreen({ user, onOpenWeeklyPlan, onBack }) {
         <View style={styles.emptyState}>
           <AppText style={styles.emptyTitle}>Hold your gains. 💪</AppText>
           <AppText style={styles.emptyText}>
-            You're not on a plan yet. Head to the Plans tab to preorder — next cohort opens this Sunday.
+            You're not on a plan yet. Head to the Plans tab to preorder once the next menu is published.
           </AppText>
         </View>
       )}
