@@ -41,7 +41,8 @@ export const profilesService = {
           gcash_number: gcash_number || null,
         })
         .eq('id', user.id)
-        .select();
+        .select()
+        .single();
 
       if (error) {
         console.error('Error updating profile:', error);

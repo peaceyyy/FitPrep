@@ -2,6 +2,7 @@ import AppText from "../components/AppText";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -16,21 +17,25 @@ import { fetchAllDailyDeliveries } from "../services/deliveriesService";
 import { DELIVERY_STATUSES } from "../services/deliveryStatusService";
 
 export default function AdminDashboardScreen({ user, onLogout, onBack }) {
-  const { plans } = usePlans();
+  const { loadPlans, plans } = usePlans();
   const { colors, isDark, setTheme } = useTheme();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const [orders, setOrders] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  const loadDashboard = useCallback(async () => {
-    setLoading(true);
+  const loadDashboard = useCallback(async ({ showPageLoader = true } = {}) => {
+    if (showPageLoader) {
+      setLoading(true);
+    }
     setError("");
     const [ordersResult, deliveriesResult] = await Promise.all([
       fetchAllOrders(),
       fetchAllDailyDeliveries(),
+      loadPlans({ showLoading: false }),
     ]);
 
     if (ordersResult.error || deliveriesResult.error) {
@@ -43,8 +48,19 @@ export default function AdminDashboardScreen({ user, onLogout, onBack }) {
 
     setOrders(ordersResult.data || []);
     setDeliveries(deliveriesResult.data || []);
-    setLoading(false);
-  }, []);
+    if (showPageLoader) {
+      setLoading(false);
+    }
+  }, [loadPlans]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadDashboard({ showPageLoader: false });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadDashboard]);
 
   useEffect(() => {
     loadDashboard();
@@ -122,7 +138,19 @@ export default function AdminDashboardScreen({ user, onLogout, onBack }) {
   ];
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+          progressBackgroundColor={colors.surface}
+        />
+      )}
+    >
       <HeaderBar
         title="Dashboard"
         action={{
@@ -132,15 +160,7 @@ export default function AdminDashboardScreen({ user, onLogout, onBack }) {
         }}
         onBack={onBack}
       />
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-        <AppText style={[styles.title, { marginBottom: 0 }]}>Admin Overview</AppText>
-        <Pressable 
-          onPress={loadDashboard}
-          style={({ pressed }) => [{ padding: 8, backgroundColor: colors.surfaceGreen, borderRadius: 10 }, pressed && { opacity: 0.7 }]}
-        >
-          <Feather name="refresh-cw" size={16} color={colors.brand} />
-        </Pressable>
-      </View>
+      <AppText style={styles.title}>Admin Overview</AppText>
 
       {loading && (
         <ActivityIndicator color={colors.accent} style={styles.loader} />

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Pressable, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState, useEffect } from 'react';
+import { View, StyleSheet, FlatList, Pressable, TextInput, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import AppText from '../components/AppText';
 import HeaderBar from '../components/HeaderBar';
 import { useTheme } from '../context/useTheme';
@@ -12,19 +12,33 @@ export default function AdminUsersScreen({ onOpenUserDetails, onBack }) {
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [processingId, setProcessingId] = useState(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    setLoading(true);
+  const fetchUsers = useCallback(async ({ showPageLoader = true } = {}) => {
+    if (showPageLoader) {
+      setLoading(true);
+    }
     const data = await profilesService.listProfiles();
     setUsers(data);
-    setLoading(false);
-  };
+    if (showPageLoader) {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchUsers({ showPageLoader: false });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleToggleBlock = async (user) => {
     const newStatus = user.status === 'disabled' ? 'active' : 'disabled';
@@ -132,6 +146,15 @@ export default function AdminUsersScreen({ onOpenUserDetails, onBack }) {
       renderItem={renderItem}
       contentContainerStyle={styles.list}
       ListHeaderComponent={renderHeader}
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+          progressBackgroundColor={colors.surface}
+        />
+      )}
       ListEmptyComponent={
         loading ? (
           <View style={styles.centered}><ActivityIndicator color={colors.accent} /></View>

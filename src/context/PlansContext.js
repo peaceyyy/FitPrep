@@ -116,30 +116,36 @@ function orderWeekStart(order) {
 export function PlansProvider({ children }) {
   const [state, dispatch] = useReducer(plansReducer, initialState);
 
-  const loadPlans = useCallback(async () => {
-    dispatch({ type: 'LOAD_START' });
+  const loadPlans = useCallback(async ({ showLoading = true } = {}) => {
+    if (showLoading) {
+      dispatch({ type: 'LOAD_START' });
+    }
     const { data, error, source } = await fetchPlans();
 
     if (error) {
       dispatch({ type: 'LOAD_ERROR', message: error.message });
-      return;
+      return { data: [], error, source };
     }
 
     dispatch({ type: 'LOAD_SUCCESS', plans: data, source });
     console.log(`[PlansContext] Loaded ${data?.length || 0} plans from: ${source}`);
+    return { data, error: null, source };
   }, []);
 
-  const loadOrders = useCallback(async () => {
-    dispatch({ type: 'ORDERS_START' });
+  const loadOrders = useCallback(async ({ showLoading = true } = {}) => {
+    if (showLoading) {
+      dispatch({ type: 'ORDERS_START' });
+    }
     const { data, error } = await fetchMyOrders();
 
     if (error) {
       dispatch({ type: 'ORDERS_ERROR', message: error.message });
       console.log('[PlansContext] Orders unavailable:', error.message);
-      return;
+      return { data: [], error };
     }
 
     dispatch({ type: 'ORDERS_SUCCESS', orders: data });
+    return { data, error: null };
   }, []);
 
   useEffect(() => {
@@ -190,6 +196,31 @@ export function PlansProvider({ children }) {
     }
     dispatch({ type: 'LOAD_MEALS_SUCCESS', meals: data, planId: plan.id });
   }, []);
+
+  const refreshCustomerData = useCallback(async () => {
+    const [plansResult, ordersResult] = await Promise.all([
+      loadPlans({ showLoading: false }),
+      loadOrders({ showLoading: false }),
+    ]);
+
+    if (state.selectedPlan?.id) {
+      const { data, error } = await fetchMealsForPlan(state.selectedPlan.id);
+      if (error) {
+        dispatch({ type: 'LOAD_ERROR', message: error.message });
+      } else {
+        dispatch({
+          type: 'LOAD_MEALS_SUCCESS',
+          meals: data,
+          planId: state.selectedPlan.id,
+        });
+      }
+    }
+
+    return {
+      plans: plansResult,
+      orders: ordersResult,
+    };
+  }, [loadOrders, loadPlans, state.selectedPlan?.id]);
 
   const savePlan = useCallback(async (planData, planId) => {
     const result = planId
@@ -306,6 +337,7 @@ export function PlansProvider({ children }) {
     nextBrowsingWeekStartDate,
     preorderEligibility,
     removePlan,
+    refreshCustomerData,
     savePlan,
     selectedPlan,
     selectedPlanMeals,
@@ -327,6 +359,7 @@ export function PlansProvider({ children }) {
     nextBrowsingWeekStartDate,
     preorderEligibility,
     removePlan,
+    refreshCustomerData,
     savePlan,
     selectedPlan,
     selectedPlanMeals,

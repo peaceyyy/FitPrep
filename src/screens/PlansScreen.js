@@ -1,6 +1,6 @@
 import AppText from '../components/AppText';
-import React, { useEffect } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
 import { usePlans } from '../context/PlansContext';
@@ -32,6 +32,7 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
     error,
     loading,
     preorderEligibility,
+    refreshCustomerData,
     selectedCategory,
     selectedPlan,
     setSelectedCategory,
@@ -42,6 +43,7 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
   } = usePlans();
   const { colors } = useTheme();
   const styles = React.useMemo(() => getStyles(colors), [colors]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const isCurrentWeek = browsingWeekStartDate === currentWeekStartDate;
   const subscriptionPlan = subscriptionForWeek?.published_weekly_plans;
@@ -50,6 +52,15 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
   const planWeekCopy = subscriptionForWeek
     ? `${subscriptionPlan?.name || 'Your plan'} is already locked for ${weekRangeLabel}.`
     : 'Browse published weekly menus and preorder before the delivery week starts.';
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshCustomerData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshCustomerData]);
 
   useEffect(() => {
     if (subscriptionPlan?.category) {
@@ -60,7 +71,19 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
   }, [browsingWeekStartDate, setSelectedCategory, subscriptionPlan?.category, subscriptionForWeek, user?.goal]);
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+          progressBackgroundColor={colors.surface}
+        />
+      )}
+    >
       <HeaderBar
         title="Plans"
         

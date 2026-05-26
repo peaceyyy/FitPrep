@@ -1,6 +1,6 @@
 import AppText from '../components/AppText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View, Pressable, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
 import { useTheme } from '../context/useTheme';
@@ -33,10 +33,11 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
   const { orders, ordersLoading, loadOrders, setSelectedCategory, setBrowsingWeek } = usePlans();
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  const loadDeliveries = useCallback(async () => {
-    setLoading(true);
+  const loadDeliveries = useCallback(async ({ showPageLoader = true } = {}) => {
+    if (showPageLoader) setLoading(true);
     setError('');
     const [{ data, error: fetchError }] = await Promise.all([
       fetchMyDailyDeliveries(),
@@ -48,8 +49,17 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
     } else {
       setDeliveries(data || []);
     }
-    setLoading(false);
+    if (showPageLoader) setLoading(false);
   }, [loadOrders]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadDeliveries({ showPageLoader: false });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadDeliveries]);
 
   useEffect(() => {
     loadDeliveries();
@@ -161,8 +171,20 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
   };
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="My Deliveries" action={{ icon: 'refresh-cw', onPress: loadDeliveries }} onBack={onBack} />
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+          progressBackgroundColor={colors.surface}
+        />
+      )}
+    >
+      <HeaderBar title="My Deliveries" onBack={onBack} />
 
       {loading && <ActivityIndicator color={colors.accent} style={{ marginVertical: 24 }} />}
 

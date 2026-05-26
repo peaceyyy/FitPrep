@@ -1,10 +1,10 @@
 import AppText from '../components/AppText';
-import React, { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { useTheme } from '../context/useTheme';
 import { DELIVERY_STATUSES } from '../services/deliveryStatusService';
-import { updateDailyDeliveryStatus } from '../services/deliveriesService';
+import { fetchAllDailyDeliveries, updateDailyDeliveryStatus } from '../services/deliveriesService';
 
 const STATUS_ACTIONS = [
   DELIVERY_STATUSES.PREPARING,
@@ -21,7 +21,30 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
     [...(orderGroup?.deliveries || [])].sort((a, b) => a.delivery_date.localeCompare(b.delivery_date))
   );
   const [updatingId, setUpdatingId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+
+  const handleRefresh = useCallback(async () => {
+    const orderId = orderGroup?.id || orderGroup?.order?.id;
+    if (!orderId) return;
+
+    setRefreshing(true);
+    setError('');
+    try {
+      const { data, error: fetchError } = await fetchAllDailyDeliveries();
+      if (fetchError) {
+        setError(fetchError.message || 'Could not refresh this delivery.');
+      } else {
+        setDeliveries(
+          (data || [])
+            .filter((delivery) => delivery.weekly_order_id === orderId)
+            .sort((a, b) => a.delivery_date.localeCompare(b.delivery_date)),
+        );
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [orderGroup?.id, orderGroup?.order?.id]);
 
   const handleStatusUpdate = async (delivery, currentStatus) => {
     setUpdatingId(delivery.id);
@@ -170,6 +193,15 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
         keyExtractor={(item) => item.id}
         renderItem={renderDelivery}
         ListHeaderComponent={renderHeader}
+        refreshControl={(
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+            progressBackgroundColor={colors.surface}
+          />
+        )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <AppText style={styles.emptyText}>No deliveries found for this order.</AppText>

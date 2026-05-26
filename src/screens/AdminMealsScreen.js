@@ -1,11 +1,12 @@
 import AppText from "../components/AppText";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   StyleSheet,
   View,
 } from "react-native";
@@ -77,13 +78,24 @@ function getEffectivePublished(plan, meals) {
   return Boolean(plan.is_published) && getReadiness(meals).isReady;
 }
 
+async function buildMealSnapshots(plansForWeek) {
+  const entries = await Promise.all(
+    plansForWeek.map(async (plan) => {
+      const { data } = await fetchMealsForPlan(plan.id);
+      return [plan.id, data || []];
+    }),
+  );
+
+  return Object.fromEntries(entries);
+}
+
 export default function AdminMealsScreen({
   onCreateMeal,
   onCreatePlan,
   onEditPlan,
   onBack,
 }) {
-  const { plans, loading, error, source, removePlan } = usePlans();
+  const { plans, loading, error, source, loadPlans, removePlan } = usePlans();
   const { colors, isDark, setTheme } = useTheme();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
@@ -93,6 +105,7 @@ export default function AdminMealsScreen({
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [filterSheetVisible, setFilterSheetVisible] = useState(false);
   const [mealSnapshots, setMealSnapshots] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
 
   const weekPlans = useMemo(
     () =>
@@ -155,15 +168,10 @@ export default function AdminMealsScreen({
     let cancelled = false;
 
     async function loadMealSnapshots() {
-      const entries = await Promise.all(
-        weekPlans.map(async (plan) => {
-          const { data } = await fetchMealsForPlan(plan.id);
-          return [plan.id, data || []];
-        }),
-      );
+      const snapshots = await buildMealSnapshots(weekPlans);
 
       if (!cancelled) {
-        setMealSnapshots(Object.fromEntries(entries));
+        setMealSnapshots(snapshots);
       }
     }
 
@@ -177,6 +185,16 @@ export default function AdminMealsScreen({
       cancelled = true;
     };
   }, [weekPlans]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadPlans({ showLoading: false });
+      setMealSnapshots(await buildMealSnapshots(weekPlans));
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadPlans, weekPlans]);
 
   const showPreviousWeek = () => {
     setAdminWeekStartDate((weekStartDate) =>
@@ -424,6 +442,15 @@ export default function AdminMealsScreen({
         keyExtractor={(item) => item.id}
         renderItem={renderPlanCard}
         ListHeaderComponent={ListHeader}
+        refreshControl={(
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+            progressBackgroundColor={colors.surface}
+          />
+        )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             {!!error ? (

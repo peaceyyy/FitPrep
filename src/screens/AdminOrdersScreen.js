@@ -1,6 +1,6 @@
 import AppText from '../components/AppText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, Pressable, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
 import { useTheme } from '../context/useTheme';
@@ -13,11 +13,14 @@ export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
 
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [searchText, setSearchText] = useState('');
 
-  const loadDeliveries = useCallback(async () => {
-    setLoading(true);
+  const loadDeliveries = useCallback(async ({ showPageLoader = true } = {}) => {
+    if (showPageLoader) {
+      setLoading(true);
+    }
     setError('');
     const { data, error: fetchError } = await fetchAllDailyDeliveries();
     if (fetchError) {
@@ -26,8 +29,19 @@ export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
     } else {
       setDeliveries(data || []);
     }
-    setLoading(false);
+    if (showPageLoader) {
+      setLoading(false);
+    }
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadDeliveries({ showPageLoader: false });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadDeliveries]);
 
   useEffect(() => {
     loadDeliveries();
@@ -147,14 +161,8 @@ export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
         onBack={onBack} 
       />
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <View style={{ marginBottom: 14 }}>
         <AppText style={{ color: colors.brand, fontSize: 28, fontWeight: "900" }}>Delivery Orders</AppText>
-        <Pressable 
-          onPress={loadDeliveries}
-          style={({ pressed }) => [{ padding: 8, backgroundColor: colors.surfaceGreen, borderRadius: 10 }, pressed && { opacity: 0.7 }]}
-        >
-          <Feather name="refresh-cw" size={16} color={colors.brand} />
-        </Pressable>
       </View>
 
       <View style={styles.pillSummaryRow}>
@@ -207,6 +215,15 @@ export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
       renderItem={renderOrderGroup}
       ListHeaderComponent={renderHeader}
       ListFooterComponent={<View style={styles.footerSpacer} />}
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+          progressBackgroundColor={colors.surface}
+        />
+      )}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
       ListEmptyComponent={loading ? (

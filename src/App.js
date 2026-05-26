@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { BackHandler, PanResponder, SafeAreaView, StyleSheet, View } from 'react-native';
+import { BackHandler, PanResponder, SafeAreaView, StyleSheet, View, Alert } from 'react-native';
 import {
   useFonts,
   PlusJakartaSans_400Regular,
@@ -162,6 +162,14 @@ function AppContent() {
     
     // Hydrate from public profiles table
     const profile = await profilesService.getCurrentProfile();
+
+    if (profile && profile.status === 'disabled') {
+      if (supabase) await supabase.auth.signOut();
+      Alert.alert('Account Disabled', 'Your account has been blocked. Please contact support.');
+      setHistory(['login']);
+      return;
+    }
+
     if (profile) {
       if (profile.full_name) fullName = profile.full_name;
       if (profile.goal) goal = profile.goal;

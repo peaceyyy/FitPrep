@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import HeaderBar from "../components/HeaderBar";
-import { COLORS, TYPOGRAPHY } from "../theme";
+import { TYPOGRAPHY } from "../theme";
+import { useTheme } from "../context/useTheme";
 import {
   MOCK_PAYMENT_METHOD,
   normalizeDeliveryTime,
@@ -26,6 +27,8 @@ const timeOptions = [
 ];
 
 export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
+  const { colors } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
   const [selectedTime, setSelectedTime] = useState("6:00 AM");
   const [loading, setLoading] = useState(false);
   const [paymentMarked, setPaymentMarked] = useState(false);
@@ -173,7 +176,7 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
               <Ionicons
                 name={showFullSchedule ? "chevron-up" : "chevron-down"}
                 size={18}
-                color={COLORS.brand}
+                color={colors.brand}
               />
             </Pressable>
           </View>
@@ -225,7 +228,7 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
                     <Ionicons
                       name="moon-outline"
                       size={14}
-                      color="#264653"
+                      color={colors.textSecondary}
                       style={styles.mealIcon}
                     />
                     <View style={styles.mealTextContainer}>
@@ -274,8 +277,8 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
               size={24}
               color={
                 selectedTime === option.label
-                  ? COLORS.brand
-                  : COLORS.textSecondary
+                  ? colors.brand
+                  : colors.textSecondary
               }
               style={{ marginBottom: 6 }}
             />
@@ -298,7 +301,7 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
           <Ionicons
             name="card-outline"
             size={20}
-            color={COLORS.brand}
+            color={colors.brand}
             style={{ marginRight: 8 }}
           />
           <AppText style={styles.paymentCardTitle}>
@@ -311,7 +314,7 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
             <Ionicons
               name="qr-code-outline"
               size={48}
-              color={COLORS.brand}
+              color={colors.brand}
               style={{ marginBottom: 6 }}
             />
             <AppText style={styles.qrLabel}>GCASH DEMO QR</AppText>
@@ -408,7 +411,7 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
         disabled={!canConfirm}
       >
         {loading ? (
-          <ActivityIndicator color="#ffffff" />
+          <ActivityIndicator color={colors.surface} />
         ) : (
           <AppText
             style={[
@@ -424,21 +427,21 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   root: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   content: {
     padding: 20,
     paddingBottom: 120,
   },
   summaryCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     padding: 20,
     marginBottom: 22,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   summaryHeader: {
     flexDirection: "row",
@@ -446,28 +449,28 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   planBadge: {
-    backgroundColor: COLORS.highlight,
+    backgroundColor: colors.highlight,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
   planBadgeText: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: "700",
     fontSize: 11,
   },
   summaryMeals: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: "700",
   },
   summaryTitle: {
     fontSize: 24,
     fontWeight: "800",
-    color: COLORS.brand,
+    color: colors.brand,
     marginBottom: 18,
   },
   planNote: {
-    backgroundColor: COLORS.highlightSubtle,
+    backgroundColor: colors.highlightSubtle,
     borderRadius: 20,
     padding: 14,
     flexDirection: "row",
@@ -480,14 +483,16 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     textAlign: "center",
     textAlignVertical: "center",
-    backgroundColor: "#d6ebc1",
+    backgroundColor: colors.inputBg,
     marginRight: 10,
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: "700",
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   planNoteText: {
     flex: 1,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: TYPOGRAPHY.xs,
     lineHeight: 18,
   },
@@ -505,12 +510,12 @@ const styles = StyleSheet.create({
   scheduleTitle: {
     fontSize: TYPOGRAPHY.xs,
     fontWeight: TYPOGRAPHY.extrabold,
-    color: COLORS.brand,
+    color: colors.brand,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   scheduleSubtitle: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     lineHeight: 17,
     marginTop: 3,
@@ -521,26 +526,26 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.highlightSubtle,
+    backgroundColor: colors.highlightSubtle,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   dayCard: {
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     borderRadius: 16,
     padding: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   dayHeader: {
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
     paddingBottom: 6,
     marginBottom: 8,
   },
   dayName: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: TYPOGRAPHY.extrabold,
     fontSize: TYPOGRAPHY.xs,
     textTransform: "uppercase",
@@ -566,11 +571,11 @@ const styles = StyleSheet.create({
   mealTypeLabel: {
     fontWeight: "700",
     fontSize: 12,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   mealNameText: {
     fontSize: 12,
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: "500",
     flex: 1,
   },
@@ -580,18 +585,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.highlightSubtle,
+    borderColor: colors.border,
+    backgroundColor: colors.highlightSubtle,
   },
   scheduleMoreText: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 13,
     fontWeight: "800",
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.md,
     fontWeight: TYPOGRAPHY.extrabold,
-    color: COLORS.brand,
+    color: colors.brand,
     marginBottom: 14,
   },
   timeRow: {
@@ -602,49 +607,49 @@ const styles = StyleSheet.create({
   timeOption: {
     flex: 1,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 22,
     paddingVertical: 18,
     paddingHorizontal: 16,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     marginRight: 12,
     alignItems: "center",
   },
   timeOptionActive: {
-    borderColor: COLORS.accent,
-    backgroundColor: COLORS.highlightSubtle,
+    borderColor: colors.accent,
+    backgroundColor: colors.highlightSubtle,
   },
   timeLabel: {
     fontSize: TYPOGRAPHY.md,
     fontWeight: TYPOGRAPHY.extrabold,
-    color: COLORS.brand,
+    color: colors.brand,
     marginBottom: 4,
   },
   timeSubtitle: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
   },
   paymentCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 24,
     padding: 20,
     marginBottom: 22,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   paymentHeader: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.highlightSubtle,
+    backgroundColor: colors.highlightSubtle,
     borderWidth: 1,
-    borderColor: COLORS.accent,
+    borderColor: colors.accent,
     borderRadius: 18,
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 16,
   },
   paymentCardTitle: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -655,47 +660,47 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 150,
     borderRadius: 20,
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
     borderWidth: 1,
     // Solid border — dashed is unreliable on Android
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   qrLabel: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: "800",
     fontSize: 13,
     letterSpacing: 1,
   },
   qrSubText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 11,
     marginTop: 2,
   },
   paymentDetails: {
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     borderRadius: 16,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   detailsLabel: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
   },
   detailsValue: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 14,
     fontWeight: "800",
     marginBottom: 8,
   },
   attachButton: {
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
     borderRadius: 18,
     paddingVertical: 14,
     alignItems: "center",
@@ -703,32 +708,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   attachButtonSuccess: {
-    backgroundColor: "#2a9d8f",
+    backgroundColor: colors.surfaceGreen,
+    borderWidth: 1,
+    borderColor: colors.accent,
   },
   attachText: {
-    color: COLORS.surface,
+    color: colors.surface,
     fontWeight: "700",
     fontSize: 14,
   },
   addressCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 24,
     padding: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginBottom: 22,
   },
   addressTitle: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: "800",
     marginBottom: 8,
   },
   addressText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 20,
   },
   totalCard: {
-    backgroundColor: COLORS.surfaceGreen,
+    backgroundColor: colors.surfaceGreen,
     borderRadius: 26,
     padding: 20,
     marginBottom: 22,
@@ -739,55 +746,60 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   totalLabel: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: TYPOGRAPHY.bold,
     fontSize: TYPOGRAPHY.base,
   },
   totalValue: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: TYPOGRAPHY.bold,
     fontSize: TYPOGRAPHY.base,
   },
   freeLabel: {
-    color: COLORS.accent,
+    color: colors.accent,
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: colors.border,
     marginVertical: 10,
   },
   totalTitle: {
     fontSize: TYPOGRAPHY.lg,
     fontWeight: TYPOGRAPHY.extrabold,
-    color: COLORS.brand,
+    color: colors.brand,
   },
   confirmButton: {
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
     borderRadius: 20,
     paddingVertical: 16,
     alignItems: "center",
   },
   confirmButtonDisabled: {
-    backgroundColor: "#e2e6d9",
+    backgroundColor: colors.inputBg,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   confirmLabel: {
-    color: COLORS.surface,
+    color: colors.surface,
     fontWeight: TYPOGRAPHY.extrabold,
     fontSize: TYPOGRAPHY.md,
   },
   confirmLabelDisabled: {
-    color: COLORS.muted,
+    color: colors.muted,
   },
   checkoutNotice: {
-    backgroundColor: "#eef3e4",
+    backgroundColor: colors.warningSubtle,
     borderRadius: 18,
     padding: 14,
     marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.warning,
   },
   checkoutNoticeText: {
-    color: COLORS.textSecondary,
+    color: colors.warning,
     fontSize: 13,
     lineHeight: 18,
     textAlign: "center",
+    fontWeight: "600",
   },
 });

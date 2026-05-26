@@ -1,6 +1,6 @@
 import AppText from '../components/AppText';
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
 import { usePlans } from '../context/PlansContext';
@@ -23,6 +23,7 @@ export default function WeeklyPlanScreen({ onBack, onPreorder, initialDay }) {
     currentWeekStartDate,
     mealsLoading,
     preorderEligibility,
+    refreshCustomerData,
     selectedCategory,
     selectedPlan,
     selectedPlanMeals,
@@ -34,6 +35,7 @@ export default function WeeklyPlanScreen({ onBack, onPreorder, initialDay }) {
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const [selectedDay, setSelectedDay] = useState(initialDay || 'Mon');
   const [selectedMealDetails, setSelectedMealDetails] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const dayMeals = useMemo(() => (
     selectedPlanMeals.filter((meal) => normalizeDayLabel(meal.day_of_week) === selectedDay)
@@ -52,8 +54,29 @@ export default function WeeklyPlanScreen({ onBack, onPreorder, initialDay }) {
   const canPreorder = preorderEligibility.canPreorder;
   const subscriptionPlanName = subscriptionForWeek?.published_weekly_plans?.name;
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshCustomerData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshCustomerData]);
+
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+          progressBackgroundColor={colors.surface}
+        />
+      )}
+    >
       <HeaderBar
         title={selectedPlan ? selectedPlan.name : 'Weekly Plan'}
         onBack={onBack}

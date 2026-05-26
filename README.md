@@ -1,4 +1,4 @@
-# PrepMate / FitPrep
+# FitPrep
 
 FitPrep is a React Native mobile app prototype for **PrepMate**, a weekly fitness meal-prep preorder system built for a mobile development class.
 
@@ -77,28 +77,6 @@ Important folders:
 - `src/mock` contains fallback data for local/demo use.
 - `assets` contains app icons and brand imagery.
 
-## Quick Start
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-Start the Expo development server:
-
-```bash
-npm start
-```
-
-Run on a target platform:
-
-```bash
-npm run android
-npm run ios
-npm run web
-```
-
 ## Environment Variables
 
 Create a local Expo environment file with:
@@ -163,8 +141,6 @@ The included `seed_plans.sql` file provides sample weekly plan and meal data for
 
 ## Demo Walkthrough
 
-A typical class demo can show:
-
 1. Admin logs in and opens the manage plans area.
 2. Admin creates or edits a weekly plan.
 3. Admin adds meals for the week.
@@ -174,7 +150,6 @@ A typical class demo can show:
 7. Admin opens delivery tracking and updates a delivery status.
 8. Customer opens delivery tracking and sees their own delivery progress.
 
-This demonstrates the core value of the app: one weekly meal-prep preorder workflow shared by customers and business operators.
 
 ## Scope Boundaries
 
@@ -191,7 +166,6 @@ These are intentionally out of scope for the MVP:
 - Full order status audit history.
 - Persisted production reviews.
 
-The app keeps these areas simplified so the prototype stays focused on the main preorder and tracking workflow.
 
 ## Key Source Files
 
@@ -207,6 +181,3 @@ The app keeps these areas simplified so the prototype stays focused on the main 
 | `src/services/profilesService.js` | Customer profile and admin profile access. |
 | `src/services/deliveryStatusService.js` | Demo delivery status projection. |
 
-## Current Status
-
-FitPrep is a demo-ready mobile MVP for a mobile development class. It has enough backend persistence to prove real customer/admin data flow while keeping payments, logistics, and review persistence intentionally simplified.

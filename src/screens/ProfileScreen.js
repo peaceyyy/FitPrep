@@ -1,8 +1,9 @@
 import AppText from "../components/AppText";
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   Alert,
   Image,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -41,9 +42,19 @@ export default function ProfileScreen({
   onBack,
   onUpdateUser,
 }) {
-  const { orders, selectedPlanMeals } = usePlans();
+  const { orders, refreshCustomerData, selectedPlanMeals } = usePlans();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshCustomerData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshCustomerData]);
 
   const stats = useMemo(() => {
     const orderCount = Array.isArray(orders) ? orders.length : 0;
@@ -113,7 +124,19 @@ export default function ProfileScreen({
   };
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+          progressBackgroundColor={colors.surface}
+        />
+      )}
+    >
       <HeaderBar title="Profile" onBack={onBack} />
 
       <View style={styles.profileCard}>

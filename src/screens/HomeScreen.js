@@ -1,9 +1,10 @@
 import AppText from "../components/AppText";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -292,16 +293,27 @@ export default function HomeScreen({
     orders,
     ordersLoading,
     selectedPlanMeals,
+    refreshCustomerData,
     subscriptionForWeek,
     setBrowsingWeek,
     setSelectedCategory,
     showCurrentWeek,
   } = usePlans();
+  const [refreshing, setRefreshing] = useState(false);
 
   const handleBrowsePlans = () => {
     setBrowsingWeek(getNextWeekStartDate(currentWeekStartDate));
     if (onNavigateToPlans) onNavigateToPlans();
   };
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshCustomerData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshCustomerData]);
 
   const isCurrentWeek = browsingWeekStartDate === currentWeekStartDate;
   const todayLabel = getTodayDayLabel();
@@ -362,6 +374,15 @@ export default function HomeScreen({
     <ScrollView
       style={styles.root}
       contentContainerStyle={styles.content}
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+          progressBackgroundColor={colors.surface}
+        />
+      )}
       showsVerticalScrollIndicator={false}
     >
       <HeaderBar title="Today" onBack={onBack} />

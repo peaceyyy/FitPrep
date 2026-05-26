@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Pressable, ScrollView, Alert, Modal, FlatList } from 'react-native';
+import React, { useCallback, useState, useEffect } from 'react';
+import { View, StyleSheet, Pressable, ScrollView, Alert, Modal, FlatList, RefreshControl } from 'react-native';
 import AppText from '../components/AppText';
 import HeaderBar from '../components/HeaderBar';
 import { useTheme } from '../context/useTheme';
@@ -13,20 +13,34 @@ export default function AdminUserDetailsScreen({ profileId, onBack }) {
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPlanPicker, setShowPlanPicker] = useState(false);
   const [availablePlans, setAvailablePlans] = useState([]);
 
-  useEffect(() => {
-    fetchProfile();
-  }, [profileId]);
-
-  const fetchProfile = async () => {
-    setLoading(true);
+  const fetchProfile = useCallback(async ({ showPageLoader = true } = {}) => {
+    if (showPageLoader) {
+      setLoading(true);
+    }
     const data = await profilesService.getProfile(profileId);
     setProfile(data);
-    setLoading(false);
-  };
+    if (showPageLoader) {
+      setLoading(false);
+    }
+  }, [profileId]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchProfile({ showPageLoader: false });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchProfile]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const updateField = async (field, value) => {
     setSaving(true);
@@ -90,7 +104,18 @@ export default function AdminUserDetailsScreen({ profileId, onBack }) {
 
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={(
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+            progressBackgroundColor={colors.surface}
+          />
+        )}
+      >
         <HeaderBar 
           title="User Details" 
           onBack={onBack} 
