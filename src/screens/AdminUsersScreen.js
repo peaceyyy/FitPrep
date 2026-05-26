@@ -78,7 +78,7 @@ export default function AdminUsersScreen({ onOpenUserDetails, onBack }) {
       <View style={styles.footerRow}>
 
         {processingId === item.id ? (
-          <ActivityIndicator size="small" color={COLORS.brand} />
+          <ActivityIndicator size="small" color={colors.brand} />
         ) : (
           <Pressable 
             style={[styles.actionBtn, item.status === 'disabled' && styles.actionBtnUnblock]}

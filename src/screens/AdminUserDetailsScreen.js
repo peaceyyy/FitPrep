@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Pressable, ScrollView, Alert, Modal, FlatList } from 'react-native';
 import AppText from '../components/AppText';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
 import { profilesService } from '../services/profilesService';
 import { fetchPublishedPlans, getCurrentWeekStartDate } from '../services/plansService';
 import { adminGrantDemoAccess } from '../services/ordersService';
 
 export default function AdminUserDetailsScreen({ profileId, onBack }) {
+  const { colors, isDark, setTheme } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
+
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -70,7 +73,15 @@ export default function AdminUserDetailsScreen({ profileId, onBack }) {
     return (
       <View style={styles.root}>
         <View style={{ paddingHorizontal: 20 }}>
-          <HeaderBar title="User Details" onBack={onBack} />
+          <HeaderBar 
+            title="User Details" 
+            onBack={onBack} 
+            action={{
+              icon: isDark ? "moon" : "sun",
+              onPress: () => setTheme(isDark ? "light" : "dark"),
+              label: "Toggle Theme",
+            }}
+          />
         </View>
         <View style={styles.centered}><AppText>Loading...</AppText></View>
       </View>
@@ -80,7 +91,15 @@ export default function AdminUserDetailsScreen({ profileId, onBack }) {
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.content}>
-        <HeaderBar title="User Details" onBack={onBack} />
+        <HeaderBar 
+          title="User Details" 
+          onBack={onBack} 
+          action={{
+            icon: isDark ? "moon" : "sun",
+            onPress: () => setTheme(isDark ? "light" : "dark"),
+            label: "Toggle Theme",
+          }}
+        />
         
         <View style={styles.card}>
           <AppText style={styles.label}>FULL NAME</AppText>
@@ -174,103 +193,103 @@ export default function AdminUserDetailsScreen({ profileId, onBack }) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
+const getStyles = (colors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 20 },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginBottom: 20,
   },
-  label: { fontSize: 11, fontWeight: '700', color: COLORS.muted, marginBottom: 4 },
-  value: { fontSize: 16, color: COLORS.brand, marginBottom: 16, fontWeight: '600' },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: COLORS.brand, marginBottom: 10, marginLeft: 4 },
+  label: { fontSize: 11, fontWeight: '700', color: colors.muted, marginBottom: 4 },
+  value: { fontSize: 16, color: colors.brand, marginBottom: 16, fontWeight: '600' },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: colors.brand, marginBottom: 10, marginLeft: 4 },
   buttonRow: { flexDirection: 'row', gap: 10 },
   toggleBtn: {
     flex: 1,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 10,
     alignItems: 'center',
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
   },
   toggleBtnActive: {
-    backgroundColor: COLORS.brand,
-    borderColor: COLORS.brand,
+    backgroundColor: colors.brand,
+    borderColor: colors.brand,
   },
   toggleBtnText: {
-    color: COLORS.muted,
+    color: colors.muted,
     fontWeight: '600',
   },
   toggleBtnTextActive: {
-    color: COLORS.surface,
+    color: colors.surface,
   },
   toggleBtnActiveDanger: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: colors.danger,
+    borderColor: colors.danger,
   },
   toggleBtnTextActiveDanger: {
-    color: COLORS.surface,
+    color: colors.surface,
   },
   actionBtn: {
-    backgroundColor: '#e0e7ff',
+    backgroundColor: colors.highlightSubtle,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#c7d2fe',
+    borderColor: colors.border,
   },
   actionBtnText: {
-    color: '#4338ca',
+    color: colors.brand,
     fontWeight: '700',
     fontSize: 14,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 24,
     padding: 20,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.brand,
+    color: colors.brand,
     marginBottom: 16,
   },
   planItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
   planItemName: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontWeight: '700',
     fontSize: 15,
   },
   planItemDate: {
-    color: COLORS.muted,
+    color: colors.muted,
     fontSize: 12,
     marginTop: 2,
   },
   modalCloseBtn: {
     marginTop: 16,
     paddingVertical: 14,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.background,
     borderRadius: 12,
     alignItems: 'center',
   },
   modalCloseBtnText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: '700',
   },
 });

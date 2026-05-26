@@ -2,7 +2,7 @@ import AppText from '../components/AppText';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View, Pressable, Image } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
 
 const initialTasks = [
   { id: 'd1', name: 'Sarah Jenkins', address: '482 Oakwood Ave, Garden District, New Orleans, LA', status: 'Urgent', proof: null },
@@ -12,6 +12,9 @@ const initialTasks = [
 ];
 
 export default function AdminDeliveryScreen() {
+  const { colors, isDark, setTheme } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
+
   const [tasks, setTasks] = useState(initialTasks);
 
   const setOutForDelivery = (id) => setTasks((prev) => prev.map((t) => t.id === id ? { ...t, status: 'Out for Delivery' } : t));
@@ -23,7 +26,14 @@ export default function AdminDeliveryScreen() {
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <HeaderBar title="Delivery Tasks" />
+      <HeaderBar 
+        title="Delivery Tasks" 
+        action={{
+          icon: isDark ? "moon" : "sun",
+          onPress: () => setTheme(isDark ? "light" : "dark"),
+          label: "Toggle Theme",
+        }}
+      />
 
       <AppText style={styles.sectionTitle}>ACTIVE TASKS</AppText>
       <View style={styles.summaryCard}>
@@ -73,33 +83,33 @@ export default function AdminDeliveryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { backgroundColor: COLORS.background },
+const getStyles = (colors) => StyleSheet.create({
+  root: { backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 120 },
-  sectionTitle: { color: COLORS.muted, fontSize: 12, letterSpacing: 1.2, marginTop: 16, marginBottom: 10 },
-  summaryCard: { backgroundColor: COLORS.surface, borderRadius: 22, padding: 20, borderWidth: 1, borderColor: COLORS.border, marginBottom: 12 },
-  summaryText: { color: COLORS.brand, fontSize: 24, fontWeight: '900' },
-  efficiencyCard: { backgroundColor: '#eefbbf', borderColor: '#d8f1a6' },
-  efficiencyLabel: { color: COLORS.accent, fontSize: 12, marginBottom: 8 },
-  efficiencyValue: { color: COLORS.brand, fontSize: 28, fontWeight: '900' },
-  taskCard: { backgroundColor: COLORS.surface, borderRadius: 22, borderWidth: 1, borderColor: COLORS.border, padding: 18, marginBottom: 14 },
+  sectionTitle: { color: colors.muted, fontSize: 12, letterSpacing: 1.2, marginTop: 16, marginBottom: 10 },
+  summaryCard: { backgroundColor: colors.surface, borderRadius: 22, padding: 20, borderWidth: 1, borderColor: colors.border, marginBottom: 12 },
+  summaryText: { color: colors.brand, fontSize: 24, fontWeight: '900' },
+  efficiencyCard: { backgroundColor: colors.highlightSubtle, borderColor: colors.border },
+  efficiencyLabel: { color: colors.accent, fontSize: 12, marginBottom: 8 },
+  efficiencyValue: { color: colors.brand, fontSize: 28, fontWeight: '900' },
+  taskCard: { backgroundColor: colors.surface, borderRadius: 22, borderWidth: 1, borderColor: colors.border, padding: 18, marginBottom: 14 },
   taskHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  taskName: { color: COLORS.brand, fontSize: 16, fontWeight: '900' },
+  taskName: { color: colors.brand, fontSize: 16, fontWeight: '900' },
   statusBadge: { borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },
-  urgentBadge: { backgroundColor: '#fde4e1' },
-  scheduledBadge: { backgroundColor: '#eef7dd' },
-  deliveredBadge: { backgroundColor: '#dff4da' },
-  statusBadgeText: { color: COLORS.brand, fontWeight: '800', fontSize: 11 },
+  urgentBadge: { backgroundColor: colors.dangerSubtle },
+  scheduledBadge: { backgroundColor: colors.highlightSubtle },
+  deliveredBadge: { backgroundColor: colors.surfaceGreen },
+  statusBadgeText: { color: colors.brand, fontWeight: '800', fontSize: 11 },
   addressRow: { marginBottom: 16 },
-  addressText: { color: COLORS.textSecondary, lineHeight: 20 },
-  proofBox: { minHeight: 110, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, backgroundColor: '#f7f8f1', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  proofText: { color: COLORS.muted },
+  addressText: { color: colors.textSecondary, lineHeight: 20 },
+  proofBox: { minHeight: 110, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.inputBg, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  proofText: { color: colors.muted },
   proofImage: { width: '100%', height: '100%', borderRadius: 16 },
   buttonsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  outButton: { backgroundColor: '#f4f7ef', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, flex: 1, marginRight: 8, alignItems: 'center' },
-  outButtonText: { color: COLORS.brand, fontWeight: '800' },
-  deliveredButton: { backgroundColor: COLORS.brand, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, flex: 1, marginLeft: 8, alignItems: 'center' },
-  deliveredButtonText: { color: COLORS.surface, fontWeight: '800' },
-  uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.border, borderRadius: 18, paddingVertical: 18, alignItems: 'center' },
-  uploadLabel: { color: COLORS.accent, fontWeight: '800' },
+  outButton: { backgroundColor: colors.background, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, flex: 1, marginRight: 8, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  outButtonText: { color: colors.brand, fontWeight: '800' },
+  deliveredButton: { backgroundColor: colors.brand, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, flex: 1, marginLeft: 8, alignItems: 'center' },
+  deliveredButtonText: { color: colors.surface, fontWeight: '800' },
+  uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: colors.border, borderRadius: 18, paddingVertical: 18, alignItems: 'center' },
+  uploadLabel: { color: colors.accent, fontWeight: '800' },
 });

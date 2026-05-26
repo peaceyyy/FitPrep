@@ -2,7 +2,7 @@ import AppText from '../components/AppText';
 import React, { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
 import { DELIVERY_STATUSES } from '../services/deliveryStatusService';
 import { updateDailyDeliveryStatus } from '../services/deliveriesService';
 
@@ -14,6 +14,9 @@ const STATUS_ACTIONS = [
 ];
 
 export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
+  const { colors, isDark, setTheme } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
+
   const [deliveries, setDeliveries] = useState(
     [...(orderGroup?.deliveries || [])].sort((a, b) => a.delivery_date.localeCompare(b.delivery_date))
   );
@@ -36,10 +39,10 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
 
   const getStatusColor = (status) => {
     const s = (status || '').toLowerCase();
-    if (s.includes('cancelled') || s.includes('failed') || s.includes('undelivered')) return { bg: '#fbeaea', text: COLORS.danger };
-    if (s.includes('paid') || s === 'delivered') return { bg: '#dff4da', text: COLORS.accent };
-    if (s.includes('pending')) return { bg: '#fff0db', text: '#d97706' };
-    return { bg: '#f0f1ea', text: COLORS.textSecondary };
+    if (s.includes('cancelled') || s.includes('failed') || s.includes('undelivered')) return { bg: colors.dangerSubtle, text: colors.danger };
+    if (s.includes('paid') || s === 'delivered') return { bg: colors.surfaceGreen, text: colors.accent };
+    if (s.includes('pending')) return { bg: colors.warningSubtle, text: colors.warning };
+    return { bg: colors.highlightSubtle, text: colors.textSecondary };
   };
 
   const formatDate = (dateStr) => {
@@ -75,7 +78,10 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
             const disabled = isUpdating || disableForFuture;
             
             // Abbreviate "Out for Delivery" to fit 4 buttons nicely
-            const displayText = status === DELIVERY_STATUSES.OUT_FOR_DELIVERY ? 'Out' : status;
+            let displayText = status;
+            if (status === DELIVERY_STATUSES.OUT_FOR_DELIVERY) displayText = 'Out';
+            if (status === DELIVERY_STATUSES.DELIVERED) displayText = 'Claimed';
+            if (status === DELIVERY_STATUSES.UNDELIVERED) displayText = 'Unclaimed';
 
             return (
               <Pressable
@@ -114,14 +120,28 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
 
   const renderHeader = () => {
     const userName = orderGroup?.user?.full_name || 'Customer ' + (orderGroup?.user_id?.slice(0, 8) || 'Unknown');
+    const userEmail = orderGroup?.user?.email || 'No email provided';
+    const userGcash = orderGroup?.user?.gcash_number || 'No GCash provided';
     const plan = orderGroup?.order?.plan_snapshot || orderGroup?.order?.published_weekly_plans || {};
+    const orderId = orderGroup?.id || orderGroup?.order?.id || 'Unknown';
     
     return (
       <View style={styles.headerContainer}>
-        <HeaderBar title="Delivery Details" onBack={onBack} />
+        <HeaderBar 
+          title="Delivery Details" 
+          onBack={onBack} 
+          action={{
+            icon: isDark ? "moon" : "sun",
+            onPress: () => setTheme(isDark ? "light" : "dark"),
+            label: "Toggle Theme",
+          }}
+        />
         <View style={styles.orderSummary}>
           <AppText style={styles.summaryName}>{userName}</AppText>
+          <AppText style={styles.summaryContact}>{userEmail}</AppText>
+          <AppText style={styles.summaryContact}>GCash: {userGcash}</AppText>
           <AppText style={styles.summaryPlan}>{plan.name || 'Weekly plan'} • {plan.category || 'Meal plan'}</AppText>
+          <AppText style={styles.summaryPlan}>Order #{orderId.slice(0, 8)}</AppText>
         </View>
       </View>
     );
@@ -155,30 +175,31 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
+const getStyles = (colors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 120 },
   headerContainer: { marginBottom: 20 },
   orderSummary: { marginTop: 10, paddingHorizontal: 4 },
-  summaryName: { color: COLORS.brand, fontSize: 20, fontWeight: '900', marginBottom: 4 },
-  summaryPlan: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '700' },
-  deliveryCard: { backgroundColor: COLORS.surface, borderRadius: 20, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: COLORS.border },
+  summaryName: { color: colors.brand, fontSize: 20, fontWeight: '900', marginBottom: 2 },
+  summaryContact: { color: colors.textSecondary, fontSize: 13, marginBottom: 2 },
+  summaryPlan: { color: colors.textSecondary, fontSize: 14, fontWeight: '700', marginTop: 2 },
+  deliveryCard: { backgroundColor: colors.surface, borderRadius: 20, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
   cardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 },
   cardHeadText: { flex: 1, paddingRight: 10 },
-  dateLabel: { color: COLORS.brand, fontSize: 16, fontWeight: '800', marginBottom: 4 },
-  timeSlot: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '700' },
-  statusBadge: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, backgroundColor: '#dff4da' },
-  statusText: { color: COLORS.brand, fontSize: 11, fontWeight: '800' },
+  dateLabel: { color: colors.brand, fontSize: 16, fontWeight: '800', marginBottom: 4 },
+  timeSlot: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
+  statusBadge: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999 },
+  statusText: { fontSize: 11, fontWeight: '800' },
   actionsRow: { flexDirection: 'row', gap: 6, marginTop: 12 },
-  statusAction: { minHeight: 40, flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f4f7ef', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 4, borderWidth: 1, borderColor: COLORS.border },
-  statusActionActive: { backgroundColor: COLORS.brand, borderColor: COLORS.brand },
-  statusActionDisabled: { backgroundColor: '#f0f1ea', borderColor: COLORS.border, opacity: 0.5 },
-  statusActionText: { color: COLORS.brand, fontSize: 10, fontWeight: '800', textAlign: 'center' },
-  statusActionTextActive: { color: COLORS.surface },
-  statusActionTextDisabled: { color: COLORS.muted },
-  emptyState: { backgroundColor: COLORS.surface, borderRadius: 18, padding: 18, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
-  emptyText: { color: COLORS.textSecondary, fontWeight: '700', textAlign: 'center' },
-  errorState: { backgroundColor: COLORS.dangerSubtle, borderRadius: 16, padding: 14, marginTop: 8 },
-  errorText: { color: COLORS.danger, fontWeight: '800', textAlign: 'center' },
+  statusAction: { minHeight: 40, flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 4, borderWidth: 1, borderColor: colors.border },
+  statusActionActive: { backgroundColor: colors.brand, borderColor: colors.brand },
+  statusActionDisabled: { backgroundColor: colors.inputBg, borderColor: colors.border, opacity: 0.5 },
+  statusActionText: { color: colors.brand, fontSize: 10, fontWeight: '800', textAlign: 'center' },
+  statusActionTextActive: { color: colors.surface },
+  statusActionTextDisabled: { color: colors.muted },
+  emptyState: { backgroundColor: colors.surface, borderRadius: 18, padding: 18, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  emptyText: { color: colors.textSecondary, fontWeight: '700', textAlign: 'center' },
+  errorState: { backgroundColor: colors.dangerSubtle, borderRadius: 16, padding: 14, marginTop: 8 },
+  errorText: { color: colors.danger, fontWeight: '800', textAlign: 'center' },
   footerSpacer: { height: 12 },
 });

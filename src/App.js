@@ -237,7 +237,7 @@ function AppContent() {
       case 'plans':
         return <PlansScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} onBack={history.length > 1 ? navigateBack : null} />;
       case 'orders':
-        return <OrdersScreen user={user} reviewedOrderIds={reviewedOrderIds} onOpenCheckout={handleOpenCheckout} onOpenReview={(order) => { setReviewOrder(order); navigateTo('review'); }} onBack={history.length > 1 ? navigateBack : null} onNavigateToPlans={() => resetTo('plans')} onNavigateToDay={(day) => { setWeeklyPlanDay(day); resetTo('weeklyPlan'); }} />;
+        return <OrdersScreen user={user} reviewedOrderIds={reviewedOrderIds} onOpenCheckout={handleOpenCheckout} onOpenReview={(order) => { setReviewOrder(order); navigateTo('review'); }} onBack={history.length > 1 ? navigateBack : null} onNavigateToPlans={() => resetTo('plans')} onNavigateToDay={(day) => { setWeeklyPlanDay(day); navigateTo('weeklyPlan'); }} />;
       case 'profile':
         return <ProfileScreen 
           user={user} 

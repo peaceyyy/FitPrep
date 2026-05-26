@@ -87,7 +87,7 @@ export async function fetchAllDailyDeliveries() {
   if (userIds.length > 0) {
     const { data: profilesData } = await supabase
       .from('profiles')
-      .select('id, full_name, address')
+      .select('id, full_name, address, email, gcash_number')
       .in('id', userIds);
 
     if (profilesData) {
