@@ -1,10 +1,13 @@
 import AppText from '../components/AppText';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
+import { TYPOGRAPHY } from '../theme';
 
 export default function OrderTrackingScreen({ onBack }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <HeaderBar title="Track Order" onBack={onBack} />
@@ -61,27 +64,29 @@ export default function OrderTrackingScreen({ onBack }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   root: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   content: {
     padding: 20,
     paddingBottom: 120,
   },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     padding: 20,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginBottom: 20,
   },
   statusLabel: {
-    color: COLORS.accent,
-    fontSize: 12,
-    fontWeight: '700',
+    color: colors.accent,
+    fontSize: TYPOGRAPHY.xs,
+    fontWeight: TYPOGRAPHY.bold,
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   orderHeadingRow: {
     flexDirection: 'row',
@@ -90,26 +95,27 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   orderTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.brand,
+    fontSize: TYPOGRAPHY.xl,
+    fontWeight: TYPOGRAPHY.extrabold,
+    color: colors.brand,
     flex: 1,
     marginRight: 12,
   },
   activeBadge: {
-    backgroundColor: COLORS.highlight,
+    backgroundColor: colors.highlight,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
   activeBadgeText: {
-    color: COLORS.brand,
-    fontWeight: '700',
-    fontSize: 11,
+    color: colors.brand,
+    fontWeight: TYPOGRAPHY.bold,
+    fontSize: TYPOGRAPHY.xs,
   },
   orderSubtitle: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 18,
+    fontSize: TYPOGRAPHY.sm,
   },
   avatarsRow: {
     flexDirection: 'row',
@@ -120,43 +126,45 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: '#d6ebc1',
+    backgroundColor: colors.highlight,
     marginRight: -12,
     borderWidth: 3,
-    borderColor: COLORS.surface,
+    borderColor: colors.surface,
   },
   extraCount: {
     marginLeft: 16,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: '#e8f4d2',
+    backgroundColor: colors.surfaceGreen,
   },
   extraCountText: {
-    color: COLORS.brand,
-    fontWeight: '700',
+    color: colors.brand,
+    fontWeight: TYPOGRAPHY.bold,
+    fontSize: TYPOGRAPHY.sm,
   },
   arrivalLabel: {
-    color: COLORS.muted,
+    color: colors.muted,
     marginBottom: 4,
+    fontSize: TYPOGRAPHY.sm,
   },
   arrivalTime: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.brand,
+    fontSize: TYPOGRAPHY.lg,
+    fontWeight: TYPOGRAPHY.extrabold,
+    color: colors.brand,
   },
   timelineCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     padding: 20,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginBottom: 20,
   },
   timelineTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.brand,
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.extrabold,
+    color: colors.brand,
     marginBottom: 18,
   },
   timelineItem: {
@@ -168,45 +176,48 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 999,
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
     marginRight: 14,
   },
   timelineDotActive: {
     width: 18,
     height: 18,
     borderRadius: 999,
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     marginRight: 14,
   },
   timelineContent: {
     flex: 1,
   },
   timelineStep: {
-    color: COLORS.brand,
-    fontWeight: '700',
+    color: colors.brand,
+    fontWeight: TYPOGRAPHY.bold,
     marginBottom: 4,
+    fontSize: TYPOGRAPHY.sm,
   },
   timelineDetail: {
-    color: COLORS.muted,
-    fontSize: 13,
+    color: colors.muted,
+    fontSize: TYPOGRAPHY.xs,
   },
   timelineTime: {
-    color: COLORS.muted,
-    fontSize: 12,
+    color: colors.muted,
+    fontSize: TYPOGRAPHY.xs,
   },
   helpCard: {
-    backgroundColor: COLORS.brand,
+    // Fixed dark brand bg for consistent readability in both light and dark modes
+    backgroundColor: '#0b2912',
     borderRadius: 26,
     padding: 24,
   },
   helpHeading: {
-    color: COLORS.surface,
-    fontSize: 18,
-    fontWeight: '800',
+    color: '#ffffff',
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.extrabold,
     marginBottom: 8,
   },
   helpText: {
-    color: '#dde8d3',
+    color: 'rgba(255,255,255,0.65)',
     lineHeight: 20,
+    fontSize: TYPOGRAPHY.sm,
   },
 });

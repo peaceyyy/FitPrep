@@ -17,7 +17,7 @@ import { DELIVERY_STATUSES } from "../services/deliveryStatusService";
 
 export default function AdminDashboardScreen({ user, onLogout, onBack }) {
   const { plans } = usePlans();
-  const { colors } = useTheme();
+  const { colors, isDark, setTheme } = useTheme();
   const styles = useMemo(() => getStyles(colors), [colors]);
 
   const [orders, setOrders] = useState([]);
@@ -125,10 +125,22 @@ export default function AdminDashboardScreen({ user, onLogout, onBack }) {
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <HeaderBar
         title="Dashboard"
-        action={{ icon: "refresh-cw", onPress: loadDashboard }}
+        action={{
+          icon: isDark ? "moon" : "sun",
+          onPress: () => setTheme(isDark ? "light" : "dark"),
+          label: "Toggle Theme",
+        }}
         onBack={onBack}
       />
-      <AppText style={styles.title}>Admin Overview</AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+        <AppText style={[styles.title, { marginBottom: 0 }]}>Admin Overview</AppText>
+        <Pressable 
+          onPress={loadDashboard}
+          style={({ pressed }) => [{ padding: 8, backgroundColor: colors.surfaceGreen, borderRadius: 10 }, pressed && { opacity: 0.7 }]}
+        >
+          <Feather name="refresh-cw" size={16} color={colors.brand} />
+        </Pressable>
+      </View>
 
       {loading && (
         <ActivityIndicator color={colors.accent} style={styles.loader} />

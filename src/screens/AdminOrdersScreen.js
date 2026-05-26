@@ -1,12 +1,16 @@
 import AppText from '../components/AppText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
 import { DELIVERY_STATUSES } from '../services/deliveryStatusService';
 import { fetchAllDailyDeliveries } from '../services/deliveriesService';
 
 export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
+  const { colors, isDark, setTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -133,17 +137,35 @@ export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
 
   const renderHeader = () => (
     <View>
-      <HeaderBar title="Delivery Orders" action={{ icon: 'refresh-cw', onPress: loadDeliveries }} onBack={onBack} />
+      <HeaderBar 
+        title="Orders" 
+        action={{
+          icon: isDark ? "moon" : "sun",
+          onPress: () => setTheme(isDark ? "light" : "dark"),
+          label: "Toggle Theme",
+        }}
+        onBack={onBack} 
+      />
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <AppText style={{ color: colors.brand, fontSize: 28, fontWeight: "900" }}>Delivery Orders</AppText>
+        <Pressable 
+          onPress={loadDeliveries}
+          style={({ pressed }) => [{ padding: 8, backgroundColor: colors.surfaceGreen, borderRadius: 10 }, pressed && { opacity: 0.7 }]}
+        >
+          <Feather name="refresh-cw" size={16} color={colors.brand} />
+        </Pressable>
+      </View>
 
       <View style={styles.pillSummaryRow}>
-        <View style={[styles.pillSummary, { backgroundColor: '#eef7dd', borderColor: COLORS.accent }]}>
-          <AppText style={[styles.pillSummaryLabel, { color: COLORS.accent }]}>Active: {summary.active}</AppText>
+        <View style={[styles.pillSummary, { backgroundColor: colors.highlightSubtle, borderColor: colors.accent }]}>
+          <AppText style={[styles.pillSummaryLabel, { color: colors.accent }]}>Active: {summary.active}</AppText>
         </View>
-        <View style={[styles.pillSummary, { backgroundColor: '#f0f1ea', borderColor: COLORS.border }]}>
-          <AppText style={[styles.pillSummaryLabel, { color: COLORS.textSecondary }]}>Completed: {summary.completed}</AppText>
+        <View style={[styles.pillSummary, { backgroundColor: colors.surfaceGreen, borderColor: colors.border }]}>
+          <AppText style={[styles.pillSummaryLabel, { color: colors.textSecondary }]}>Completed: {summary.completed}</AppText>
         </View>
-        <View style={[styles.pillSummary, { backgroundColor: '#f0f1ea', borderColor: COLORS.border }]}>
-          <AppText style={[styles.pillSummaryLabel, { color: COLORS.textSecondary }]}>Total: {summary.total}</AppText>
+        <View style={[styles.pillSummary, { backgroundColor: colors.surfaceGreen, borderColor: colors.border }]}>
+          <AppText style={[styles.pillSummaryLabel, { color: colors.textSecondary }]}>Total: {summary.total}</AppText>
         </View>
       </View>
 
@@ -151,7 +173,7 @@ export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
         value={searchText}
         onChangeText={setSearchText}
         placeholder="Search order, customer, plan..."
-        placeholderTextColor={COLORS.textTertiary}
+        placeholderTextColor={colors.textTertiary}
         style={styles.searchInput}
       />
     </View>
@@ -167,7 +189,7 @@ export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
       ListHeaderComponent={renderHeader}
       ListFooterComponent={<View style={styles.footerSpacer} />}
       ListEmptyComponent={loading ? (
-        <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 24 }} />
+        <ActivityIndicator color={colors.accent} style={{ marginVertical: 24 }} />
       ) : error ? (
         <View style={styles.emptyState}>
           <AppText style={styles.emptyTitle}>Delivery orders unavailable</AppText>
@@ -185,30 +207,30 @@ export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { backgroundColor: COLORS.background },
+const getStyles = (colors) => StyleSheet.create({
+  root: { backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 120 },
   pillSummaryRow: { flexDirection: 'row', marginBottom: 14, gap: 8 },
   pillSummary: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1 },
   pillSummaryLabel: { fontSize: 13, fontWeight: '700' },
-  searchInput: { backgroundColor: COLORS.surface, borderRadius: 16, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: COLORS.border, color: COLORS.brand },
-  emptyState: { backgroundColor: COLORS.surface, borderRadius: 20, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
-  emptyTitle: { color: COLORS.brand, fontSize: 17, fontWeight: '900', marginBottom: 8 },
-  emptyText: { color: COLORS.textSecondary, fontSize: 15 },
-  retryButton: { minHeight: 44, marginTop: 16, borderRadius: 16, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.brand },
-  retryButtonText: { color: COLORS.surface, fontWeight: '800' },
-  deliveryCard: { backgroundColor: COLORS.surface, borderRadius: 22, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: COLORS.border },
+  searchInput: { backgroundColor: colors.surface, borderRadius: 16, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: colors.border, color: colors.brand },
+  emptyState: { backgroundColor: colors.surface, borderRadius: 20, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  emptyTitle: { color: colors.brand, fontSize: 17, fontWeight: '900', marginBottom: 8 },
+  emptyText: { color: colors.textSecondary, fontSize: 15 },
+  retryButton: { minHeight: 44, marginTop: 16, borderRadius: 16, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.brand },
+  retryButtonText: { color: colors.surface, fontWeight: '800' },
+  deliveryCard: { backgroundColor: colors.surface, borderRadius: 22, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
   cardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 },
   cardHeadText: { flex: 1, paddingRight: 10 },
-  customerLabel: { color: COLORS.brand, fontSize: 17, fontWeight: '900', marginBottom: 4 },
-  planName: { color: COLORS.brand, fontSize: 14, fontWeight: '800', marginBottom: 2 },
-  planMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
-  locationText: { color: COLORS.textSecondary, fontSize: 13, marginTop: 6, fontWeight: '600' },
-  pillBadge: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999, backgroundColor: '#f0f1ea' },
-  pillBadgeText: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '800' },
+  customerLabel: { color: colors.brand, fontSize: 17, fontWeight: '900', marginBottom: 4 },
+  planName: { color: colors.brand, fontSize: 14, fontWeight: '800', marginBottom: 2 },
+  planMeta: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  locationText: { color: colors.textSecondary, fontSize: 13, marginTop: 6, fontWeight: '600' },
+  pillBadge: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999, backgroundColor: colors.surfaceGreen },
+  pillBadgeText: { color: colors.textSecondary, fontSize: 11, fontWeight: '800' },
   detailGrid: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 4 },
   detailCell: { width: '50%', marginBottom: 10 },
-  detailLabel: { color: COLORS.muted, fontSize: 11, fontWeight: '700', marginBottom: 3 },
-  detailValue: { color: COLORS.brand, fontSize: 14, fontWeight: '800' },
+  detailLabel: { color: colors.muted, fontSize: 11, fontWeight: '700', marginBottom: 3 },
+  detailValue: { color: colors.brand, fontSize: 14, fontWeight: '800' },
   footerSpacer: { height: 12 },
 });

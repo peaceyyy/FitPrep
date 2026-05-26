@@ -60,12 +60,14 @@ function AppContent() {
   });
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [adminMealPlanId, setAdminMealPlanId] = useState(null);
+  const [adminMealInitialDay, setAdminMealInitialDay] = useState(null);
   const [adminPlanFormConfig, setAdminPlanFormConfig] = useState({ initialPlan: null, defaults: null });
   const [editSection, setEditSection] = useState('Personal Information');
   const [selectedAdminUserId, setSelectedAdminUserId] = useState(null);
   const [reviewOrder, setReviewOrder] = useState(null);
   const [reviewedOrderIds, setReviewedOrderIds] = useState([]);
   const [selectedAdminDelivery, setSelectedAdminDelivery] = useState(null);
+  const [weeklyPlanDay, setWeeklyPlanDay] = useState('Mon');
 
   const route = history[history.length - 1];
 
@@ -203,8 +205,9 @@ function AppContent() {
     navigateTo('checkout');
   };
 
-  const handleOpenAdminMealForm = (plan) => {
+  const handleOpenAdminMealForm = (plan, initialDay = null) => {
     setAdminMealPlanId(plan?.id || null);
+    setAdminMealInitialDay(initialDay);
     navigateTo('adminMealForm');
   };
 
@@ -234,7 +237,7 @@ function AppContent() {
       case 'plans':
         return <PlansScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} onBack={history.length > 1 ? navigateBack : null} />;
       case 'orders':
-        return <OrdersScreen user={user} reviewedOrderIds={reviewedOrderIds} onOpenCheckout={handleOpenCheckout} onOpenReview={(order) => { setReviewOrder(order); navigateTo('review'); }} onBack={history.length > 1 ? navigateBack : null} />;
+        return <OrdersScreen user={user} reviewedOrderIds={reviewedOrderIds} onOpenCheckout={handleOpenCheckout} onOpenReview={(order) => { setReviewOrder(order); navigateTo('review'); }} onBack={history.length > 1 ? navigateBack : null} onNavigateToPlans={() => resetTo('plans')} onNavigateToDay={(day) => { setWeeklyPlanDay(day); resetTo('weeklyPlan'); }} />;
       case 'profile':
         return <ProfileScreen 
           user={user} 
@@ -287,7 +290,7 @@ function AppContent() {
           />
         );
       case 'weeklyPlan':
-        return <WeeklyPlanScreen onBack={navigateBack} onPreorder={handleOpenCheckout} />;
+        return <WeeklyPlanScreen onBack={navigateBack} onPreorder={handleOpenCheckout} initialDay={weeklyPlanDay} />;
       case 'adminHome':
         return <AdminDashboardScreen user={user} onLogout={handleLogout} onBack={history.length > 1 ? navigateBack : null} />;
       case 'adminOrders':
@@ -312,7 +315,7 @@ function AppContent() {
           />
         );
       case 'adminMealForm':
-        return <AdminMealForm initialPlanId={adminMealPlanId} onBack={navigateBack} />;
+        return <AdminMealForm initialPlanId={adminMealPlanId} initialDay={adminMealInitialDay} onBack={navigateBack} />;
       case 'adminUsers':
         return <AdminUsersScreen onOpenUserDetails={(id) => { setSelectedAdminUserId(id); navigateTo('adminUserDetails'); }} onBack={history.length > 1 ? navigateBack : null} />;
       case 'adminUserDetails':

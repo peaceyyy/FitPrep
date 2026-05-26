@@ -43,8 +43,34 @@ export const COLORS = lightColors;
 
 export const TYPOGRAPHY = {
   fontFamily: 'PlusJakartaSans',
-  xs: 11, sm: 13, base: 15, md: 17, lg: 20, xl: 24, xxl: 28, display: 32,
-  regular: '400', semibold: '600', bold: '700', extrabold: '800',
+  // Size scale
+  xs: 11,
+  sm: 13,
+  base: 15,
+  md: 17,
+  lg: 20,
+  xl: 24,
+  xxl: 28,
+  display: 32,
+  hero: 30,
+  // Weight scale — use these instead of raw strings
+  regular: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+  extrabold: '800',
+  black: '900', // Reserve for 1–2 true hero moments per screen only
+};
+
+// Border radius tokens — use these instead of ad-hoc integers
+export const RADIUS = {
+  xs: 8,
+  sm: 12,
+  md: 16,
+  lg: 20,
+  xl: 24,
+  xxl: 28,
+  full: 999,
 };
 
 export const SHADOW = {

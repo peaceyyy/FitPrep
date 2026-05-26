@@ -1,12 +1,14 @@
 import AppText from '../components/AppText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View, Pressable, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
 import { useTheme } from '../context/useTheme';
 import { usePlans } from '../context/PlansContext';
+import { TYPOGRAPHY } from '../theme';
 import { DELIVERY_STATUSES } from '../services/deliveryStatusService';
 import { fetchMyDailyDeliveries } from '../services/deliveriesService';
-import { formatWeekRange, getWeekEndDate } from '../services/plansService';
+import { formatWeekRange, getWeekEndDate, normalizeCategory, getNextWeekStartDate, getCurrentWeekStartDate } from '../services/plansService';
 
 const getOrderPlan = (order) => (order ? (order.plan_snapshot || order.published_weekly_plans || {}) : {});
 
@@ -25,10 +27,10 @@ const isCurrentOrFutureOrder = (order) => {
   return weekEnd >= new Date();
 };
 
-export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = [] }) {
+export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = [], onNavigateToPlans, onNavigateToDay }) {
   const { colors, isDark } = useTheme();
   const styles = React.useMemo(() => getStyles(colors, isDark), [colors, isDark]);
-  const { orders, ordersLoading, loadOrders } = usePlans();
+  const { orders, ordersLoading, loadOrders, setSelectedCategory, setBrowsingWeek } = usePlans();
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -95,6 +97,11 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
       .sort((a, b) => getOrderWeekStart(a).localeCompare(getOrderWeekStart(b)))[0] || null;
   }, [orderGroups, orders]);
 
+  const hasFutureOrder = useMemo(() => {
+    if (!Array.isArray(orders) || orders.length === 0) return false;
+    return orders.some(isCurrentOrFutureOrder);
+  }, [orders]);
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     return new Date(`${dateStr}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
@@ -113,11 +120,33 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
     return { bg: colors.surfaceGreen, text: colors.textSecondary };
   };
 
-  const renderDelivery = (delivery) => {
+  const handleDayClick = (delivery, group) => {
+    if (!onNavigateToDay || !group.plan) return;
+    const dateObj = new Date(`${delivery.delivery_date}T00:00:00`);
+    const dayStr = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+    
+    if (group.plan.category) setSelectedCategory(normalizeCategory(group.plan.category));
+    if (group.plan.week_start_date) setBrowsingWeek(group.plan.week_start_date);
+    
+    onNavigateToDay(dayStr);
+  };
+
+  const handleBrowsePlans = () => {
+    setBrowsingWeek(getNextWeekStartDate(getCurrentWeekStartDate()));
+    if (onNavigateToPlans) onNavigateToPlans();
+  };
+
+  const renderDelivery = (delivery, group) => {
     const statusColor = getStatusColor(delivery.current_status);
 
     return (
-      <View key={delivery.id} style={styles.deliveryRow}>
+      <Pressable 
+        key={delivery.id} 
+        style={({ pressed }) => [styles.deliveryRow, pressed && { opacity: 0.7 }]}
+        onPress={() => handleDayClick(delivery, group)}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${formatDate(delivery.delivery_date)} menu`}
+      >
         <View>
           <AppText style={styles.deliveryDate}>{formatDate(delivery.delivery_date)}</AppText>
           <AppText style={styles.deliverySlot}>{delivery.delivery_time}</AppText>
@@ -127,7 +156,7 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
             {delivery.current_status?.toUpperCase() || 'UNKNOWN'}
           </AppText>
         </View>
-      </View>
+      </Pressable>
     );
   };
 
@@ -139,9 +168,15 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
 
       {!loading && !!error && (
         <View style={styles.emptyState}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.danger} style={styles.emptyStateIcon} />
           <AppText style={styles.emptyStateTitle}>Deliveries unavailable</AppText>
           <AppText style={styles.emptyStateText}>{error}</AppText>
-          <Pressable style={styles.retryButton} onPress={loadDeliveries}>
+          <Pressable
+            style={({ pressed }) => [styles.retryButton, pressed && { opacity: 0.8 }]}
+            onPress={loadDeliveries}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading deliveries"
+          >
             <AppText style={styles.retryButtonText}>Retry</AppText>
           </Pressable>
         </View>
@@ -149,6 +184,7 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
 
       {!loading && !ordersLoading && !error && orderGroups.length === 0 && upcomingPreorder && (
         <View style={styles.emptyState}>
+          <Ionicons name="calendar-outline" size={48} color={colors.accent} style={styles.emptyStateIcon} />
           <AppText style={styles.emptyStateTitle}>Preorder confirmed</AppText>
           <AppText style={styles.emptyStateText}>
             {getOrderPlan(upcomingPreorder).name || 'Your weekly plan'} is locked for {formatWeekRange(getOrderWeekStart(upcomingPreorder))}. Deliveries will appear here once that week starts.
@@ -158,6 +194,7 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
 
       {!loading && !ordersLoading && !error && orderGroups.length === 0 && !upcomingPreorder && (
         <View style={styles.emptyState}>
+          <Ionicons name="receipt-outline" size={48} color={colors.brand} style={styles.emptyStateIcon} />
           <AppText style={styles.emptyStateTitle}>No orders yet</AppText>
           <AppText style={styles.emptyStateText}>Browse the weekly plans and place your first preorder!</AppText>
         </View>
@@ -204,7 +241,7 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
                 </View>
 
                 <View style={styles.deliveryList}>
-                  {group.deliveries.map(renderDelivery)}
+                  {group.deliveries.map((delivery) => renderDelivery(delivery, group))}
                 </View>
 
                 {hasReviewed ? (
@@ -229,10 +266,21 @@ export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = 
         </>
       )}
 
-      {!upcomingPreorder && (
+      {!hasFutureOrder && (
         <View style={styles.ctaCard}>
           <AppText style={styles.ctaHeading}>Ready for next week?</AppText>
           <AppText style={styles.ctaDescription}>New plans open for preorder as soon as they are published.</AppText>
+          <Pressable
+            style={({ pressed }) => [
+              styles.ctaButton,
+              pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }
+            ]}
+            onPress={handleBrowsePlans}
+            accessibilityRole="button"
+            accessibilityLabel="Browse meal plans"
+          >
+            <AppText style={styles.ctaButtonText}>Browse Plans</AppText>
+          </Pressable>
         </View>
       )}
     </ScrollView>
@@ -276,8 +324,8 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     fontWeight: '800',
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.extrabold,
     color: colors.brand,
     marginBottom: 14,
   },
@@ -296,8 +344,8 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     paddingRight: 12,
   },
   orderTitle: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: TYPOGRAPHY.base,
+    fontWeight: TYPOGRAPHY.extrabold,
     color: colors.brand,
     marginBottom: 4,
   },
@@ -307,8 +355,8 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     marginBottom: 6,
   },
   orderPrice: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: TYPOGRAPHY.base,
+    fontWeight: TYPOGRAPHY.bold,
     color: colors.brand,
   },
   paymentRow: { flexDirection: 'row', marginBottom: 12 },
@@ -369,42 +417,64 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     fontWeight: '800',
   },
   ctaCard: {
-    backgroundColor: colors.brand,
+    // Fixed dark brand bg — avoids the inverted-mint problem in dark mode
+    backgroundColor: '#0b2912',
     borderRadius: 26,
     padding: 24,
     marginTop: 8,
+    overflow: 'hidden',
   },
   ctaHeading: {
-    color: isDark ? colors.background : colors.surface,
-    fontSize: 20,
-    fontWeight: '800',
+    // Always white on dark brand green — high contrast in both modes
+    color: '#ffffff',
+    fontSize: TYPOGRAPHY.lg,
+    fontWeight: TYPOGRAPHY.extrabold,
     marginBottom: 10,
   },
   ctaDescription: {
-    color: isDark ? colors.surfaceGreen : colors.textSecondary,
-    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.65)',
+    fontSize: TYPOGRAPHY.sm,
     marginBottom: 18,
     lineHeight: 20,
   },
+  ctaButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  ctaButtonText: {
+    color: '#0b2912',
+    fontWeight: TYPOGRAPHY.extrabold,
+    fontSize: TYPOGRAPHY.sm,
+  },
   emptyState: {
     backgroundColor: colors.surface,
-    borderRadius: 22,
-    padding: 28,
+    borderRadius: 28,
+    padding: 32,
     alignItems: 'center',
     marginBottom: 22,
     borderWidth: 1,
     borderColor: colors.border,
   },
+  emptyStateIcon: {
+    marginBottom: 16,
+    opacity: 0.9,
+  },
   emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: TYPOGRAPHY.lg,
+    fontWeight: TYPOGRAPHY.extrabold,
     color: colors.brand,
     marginBottom: 8,
   },
   emptyStateText: {
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
+    fontSize: TYPOGRAPHY.sm,
   },
   retryButton: {
     minHeight: 44,

@@ -1,17 +1,17 @@
 import AppText from '../components/AppText';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ScrollView,
   StyleSheet,
   TextInput,
   View,
   Pressable,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import BrandMark from '../components/BrandMark';
-import { COLORS } from '../theme';
+import { TYPOGRAPHY, COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
 import { supabase } from '../lib/supabaseClient';
 
 const GOAL_ICONS = { cutting: 'trending-down', bulking: 'trending-up', maintain: 'minus' };
@@ -28,12 +28,19 @@ export default function RegisterScreen({ onBack }) {
   const [secureConfirm, setSecureConfirm] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const colors = COLORS;
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.card}>
         <View style={styles.headerRow}>
-          <Pressable style={styles.backButton} onPress={onBack}>
+          <Pressable
+            style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Go back to login"
+          >
             <AppText style={styles.backArrow}>←</AppText>
           </Pressable>
           <AppText style={styles.brandTitle}>FitFood</AppText>
@@ -50,7 +57,7 @@ export default function RegisterScreen({ onBack }) {
           <TextInput
             style={styles.inputSolo}
             placeholder="John Doe"
-            placeholderTextColor={COLORS.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             value={name}
             onChangeText={setName}
           />
@@ -61,7 +68,7 @@ export default function RegisterScreen({ onBack }) {
           <TextInput
             style={styles.inputSolo}
             placeholder="john@fitfood.com"
-            placeholderTextColor={COLORS.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             keyboardType="email-address"
             autoCapitalize="none"
             value={email}
@@ -74,7 +81,7 @@ export default function RegisterScreen({ onBack }) {
           <TextInput
             style={styles.inputSolo}
             placeholder="USC Talamban Campus (Default)"
-            placeholderTextColor={COLORS.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             value={address}
             onChangeText={setAddress}
           />
@@ -85,7 +92,7 @@ export default function RegisterScreen({ onBack }) {
           <TextInput
             style={styles.inputSolo}
             placeholder="0992 867 7722 (Default)"
-            placeholderTextColor={COLORS.textTertiary}
+            placeholderTextColor={colors.textTertiary}
             keyboardType="phone-pad"
             value={gcash}
             onChangeText={setGcash}
@@ -108,7 +115,7 @@ export default function RegisterScreen({ onBack }) {
               <Feather
                 name={GOAL_ICONS[item]}
                 size={18}
-                color={goal === item ? COLORS.accent : COLORS.muted}
+                color={goal === item ? colors.accent : colors.muted}
                 style={styles.goalIcon}
               />
               <AppText style={[styles.goalLabel, goal === item && styles.goalLabelActive]}>
@@ -125,13 +132,13 @@ export default function RegisterScreen({ onBack }) {
               <TextInput
                 style={styles.input}
                 placeholder="••••••••"
-                placeholderTextColor={COLORS.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 secureTextEntry={securePassword}
                 value={password}
                 onChangeText={setPassword}
               />
               <Pressable onPress={() => setSecurePassword((prev) => !prev)}>
-                <Feather name={securePassword ? 'eye' : 'eye-off'} size={18} color={COLORS.muted} style={styles.eyeIcon} />
+                <Feather name={securePassword ? 'eye' : 'eye-off'} size={18} color={colors.muted} style={styles.eyeIcon} />
               </Pressable>
             </View>
           </View>
@@ -141,13 +148,13 @@ export default function RegisterScreen({ onBack }) {
               <TextInput
                 style={styles.input}
                 placeholder="••••••••"
-                placeholderTextColor={COLORS.textTertiary}
+                placeholderTextColor={colors.textTertiary}
                 secureTextEntry={secureConfirm}
                 value={confirm}
                 onChangeText={setConfirm}
               />
               <Pressable onPress={() => setSecureConfirm((prev) => !prev)}>
-                <Feather name={secureConfirm ? 'eye' : 'eye-off'} size={18} color={COLORS.muted} style={styles.eyeIcon} />
+                <Feather name={secureConfirm ? 'eye' : 'eye-off'} size={18} color={colors.muted} style={styles.eyeIcon} />
               </Pressable>
             </View>
           </View>
@@ -163,7 +170,6 @@ export default function RegisterScreen({ onBack }) {
             setLoading(true);
             setErrorMsg('');
             if (!supabase) {
-              // Mock auth fallback if Supabase not configured
               setTimeout(() => {
                 setErrorMsg('Supabase not configured. Could not sign up.');
                 setLoading(false);
@@ -202,16 +208,21 @@ export default function RegisterScreen({ onBack }) {
 
         <View style={styles.bottomRow}>
           <AppText style={styles.bottomText}>Already have an account?</AppText>
-          <TouchableOpacity onPress={onBack}>
+          <Pressable
+            onPress={onBack}
+            style={({ pressed }) => pressed && { opacity: 0.7 }}
+            accessibilityRole="button"
+            accessibilityLabel="Go to login"
+          >
             <AppText style={styles.bottomLink}> Login</AppText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   content: {
     alignItems: 'center',
     padding: 16,
@@ -220,7 +231,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     padding: 24,
     marginTop: 12,
@@ -240,31 +251,31 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   backButton: {
-    width: 34,
-    height: 34,
+    width: 40,
+    height: 40,
     borderRadius: 12,
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   backArrow: {
-    fontSize: 18,
-    color: COLORS.brand,
+    fontSize: TYPOGRAPHY.lg,
+    color: colors.brand,
   },
   brandTitle: {
-    color: COLORS.brand,
-    fontSize: 18,
-    fontWeight: '800',
+    color: colors.brand,
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.extrabold,
   },
   heading: {
-    color: COLORS.brand,
-    fontSize: 28,
-    fontWeight: '800',
+    color: colors.brand,
+    fontSize: TYPOGRAPHY.xxl,
+    fontWeight: TYPOGRAPHY.extrabold,
     marginBottom: 8,
   },
   subtext: {
-    color: COLORS.textTertiary,
-    fontSize: 15,
+    color: colors.muted,
+    fontSize: TYPOGRAPHY.base,
     lineHeight: 22,
     marginBottom: 22,
   },
@@ -272,45 +283,46 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   fieldLabel: {
-    color: COLORS.brand,
-    fontSize: 14,
-    fontWeight: '700',
+    color: colors.brand,
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.bold,
     marginBottom: 8,
   },
   inputSolo: {
     width: '100%',
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontSize: 16,
-    color: COLORS.brand,
+    fontSize: TYPOGRAPHY.base,
+    color: colors.brand,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: 14,
     height: 52,
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: COLORS.brand,
+    fontSize: TYPOGRAPHY.base,
+    color: colors.brand,
   },
   eyeIcon: {
     marginLeft: 10,
   },
   errorText: {
-    color: COLORS.danger,
+    color: colors.danger,
     marginBottom: 16,
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.semibold,
+    fontSize: TYPOGRAPHY.sm,
   },
   goalRow: {
     flexDirection: 'row',
@@ -319,9 +331,9 @@ const styles = StyleSheet.create({
   },
   goalButton: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: 18,
     paddingVertical: 14,
     alignItems: 'center',
@@ -331,19 +343,19 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   goalButtonActive: {
-    backgroundColor: '#edf7c4',
-    borderColor: COLORS.accent,
+    backgroundColor: colors.highlight,
+    borderColor: colors.accent,
   },
   goalIcon: {
     marginBottom: 6,
   },
   goalLabel: {
-    color: COLORS.brand,
-    fontSize: 13,
-    fontWeight: '700',
+    color: colors.brand,
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.bold,
   },
   goalLabelActive: {
-    color: COLORS.brand,
+    color: colors.brand,
   },
   rowInputs: {
     flexDirection: 'row',
@@ -358,16 +370,16 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   primaryButton: {
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
     marginVertical: 8,
   },
   primaryButtonText: {
-    color: COLORS.surface,
-    fontSize: 17,
-    fontWeight: '700',
+    color: colors.surface,
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.bold,
   },
   bottomRow: {
     flexDirection: 'row',
@@ -375,12 +387,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   bottomText: {
-    color: '#7c846f',
-    fontSize: 14,
+    color: colors.muted,
+    fontSize: TYPOGRAPHY.sm,
   },
   bottomLink: {
-    color: COLORS.accent,
-    fontSize: 14,
-    fontWeight: '700',
+    color: colors.accent,
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.bold,
   },
 });

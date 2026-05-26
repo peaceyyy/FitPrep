@@ -5,6 +5,7 @@ import HeaderBar from '../components/HeaderBar';
 import { usePlans } from '../context/PlansContext';
 import { useTheme } from '../context/useTheme';
 import ThemeToggle from '../components/ThemeToggle';
+import { TYPOGRAPHY } from '../theme';
 import * as ImagePicker from 'expo-image-picker';
 
 function getActiveDays(createdAt) {
@@ -138,7 +139,12 @@ export default function ProfileScreen({ user, onLogout, onEditProfile, onBack, o
       <View style={styles.infoCard}>
         <View style={styles.infoHeader}>
           <AppText style={styles.sectionTitle}>Account Details</AppText>
-          <Pressable style={styles.iconButton} onPress={() => onEditProfile('Personal Information')}>
+          <Pressable
+            style={styles.iconButton}
+            onPress={() => onEditProfile('Personal Information')}
+            accessibilityRole="button"
+            accessibilityLabel="Edit personal information"
+          >
             <AppText style={styles.iconButtonText}>✎</AppText>
           </Pressable>
         </View>
@@ -249,18 +255,19 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   userName: {
     color: colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: TYPOGRAPHY.xl,
+    fontWeight: TYPOGRAPHY.extrabold,
     marginBottom: 6,
   },
   userEmail: {
     color: colors.muted,
+    fontSize: TYPOGRAPHY.sm,
     marginBottom: 6,
   },
   userRole: {
     color: colors.accent,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: TYPOGRAPHY.xs,
+    fontWeight: TYPOGRAPHY.bold,
     letterSpacing: 1,
     marginBottom: 14,
   },
@@ -291,13 +298,16 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   statLabel: {
     color: colors.muted,
-    fontSize: 12,
+    fontSize: TYPOGRAPHY.xs,
+    fontWeight: TYPOGRAPHY.semibold,
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   statValue: {
     color: colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: TYPOGRAPHY.xl,
+    fontWeight: TYPOGRAPHY.extrabold,
   },
   infoCard: {
     backgroundColor: colors.surface,
@@ -323,8 +333,8 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   sectionTitle: {
     color: colors.textPrimary,
-    fontSize: 17,
-    fontWeight: '800',
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.extrabold,
   },
   iconButton: {
     width: 34,
@@ -349,15 +359,16 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   infoLabel: {
     color: colors.muted,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: TYPOGRAPHY.xs,
+    fontWeight: TYPOGRAPHY.semibold,
     marginBottom: 4,
     textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   infoValue: {
     color: colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: TYPOGRAPHY.base,
+    fontWeight: TYPOGRAPHY.bold,
     lineHeight: 22,
   },
   macroGrid: {
@@ -367,23 +378,24 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   macroItem: {
     width: '48%',
-    backgroundColor: colors.surface, // changed from static color to match surface
+    // Use inputBg (not surface) so inner cards have visual depth against the card surface in both themes
+    backgroundColor: colors.inputBg,
     borderRadius: 16,
     padding: 14,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: colors.border, // changed from static color to match border
+    borderColor: colors.border,
   },
   macroLabel: {
     color: colors.muted,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: TYPOGRAPHY.xs,
+    fontWeight: TYPOGRAPHY.semibold,
     marginBottom: 6,
   },
   macroValue: {
     color: colors.textPrimary,
-    fontSize: 19,
-    fontWeight: '800',
+    fontSize: TYPOGRAPHY.lg,
+    fontWeight: TYPOGRAPHY.extrabold,
   },
   planHint: {
     color: colors.textSecondary,
@@ -410,7 +422,8 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   logoutText: {
     color: colors.danger,
-    fontWeight: '800',
-    fontSize: 15,
+    fontWeight: TYPOGRAPHY.extrabold,
+    fontSize: TYPOGRAPHY.base,
+    letterSpacing: 0.5,
   },
 });

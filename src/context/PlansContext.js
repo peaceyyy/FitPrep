@@ -226,6 +226,10 @@ export function PlansProvider({ children }) {
     dispatch({ type: 'SET_BROWSING_WEEK', weekStartDate: getPreviousWeekStartDate(state.browsingWeekStartDate) });
   }, [state.browsingWeekStartDate]);
 
+  const setBrowsingWeek = useCallback((weekStartDate) => {
+    dispatch({ type: 'SET_BROWSING_WEEK', weekStartDate });
+  }, []);
+
   const canShowPreviousWeek = state.browsingWeekStartDate > CUSTOMER_MIN_WEEK_START_DATE;
 
   const showNextWeek = useCallback(() => {
@@ -305,6 +309,7 @@ export function PlansProvider({ children }) {
     savePlan,
     selectedPlan,
     selectedPlanMeals,
+    setBrowsingWeek,
     setSelectedCategory,
     showCurrentWeek,
     showNextWeek,
@@ -325,6 +330,7 @@ export function PlansProvider({ children }) {
     savePlan,
     selectedPlan,
     selectedPlanMeals,
+    setBrowsingWeek,
     setSelectedCategory,
     showCurrentWeek,
     showNextWeek,

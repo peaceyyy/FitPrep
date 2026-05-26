@@ -4,6 +4,7 @@ import { View, Pressable, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import BrandMark from './BrandMark';
 import { useTheme } from '../context/useTheme';
+import { TYPOGRAPHY } from '../theme';
 
 export default function HeaderBar({ title, onBack, action }) {
   const { colors } = useTheme();
@@ -12,17 +13,29 @@ export default function HeaderBar({ title, onBack, action }) {
   return (
     <View style={styles.row}>
       {onBack ? (
-        <Pressable onPress={onBack} style={styles.iconButton}>
+        <Pressable
+          onPress={onBack}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
           <Feather name="arrow-left" size={20} color={colors.brand} style={styles.icon} />
         </Pressable>
       ) : (
-        <BrandMark size={34} style={styles.headerLogo} />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <BrandMark size={38} style={styles.headerLogo} />
+        </View>
       )}
 
       <AppText style={styles.title}>{title}</AppText>
 
       {action ? (
-        <Pressable onPress={action.onPress} style={styles.iconButton}>
+        <Pressable
+          onPress={action.onPress}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel={action.label || 'Header action'}
+        >
           <Feather name={action.icon} size={20} color={colors.brand} style={styles.icon} />
         </Pressable>
       ) : (
@@ -41,8 +54,8 @@ const getStyles = (colors) => StyleSheet.create({
     paddingVertical: 18,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.extrabold,
     color: colors.brand,
   },
   iconButton: {
@@ -51,7 +64,10 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: colors.surfaceGreen, // using dynamic color
+    backgroundColor: 'transparent',
+  },
+  iconButtonPressed: {
+    opacity: 0.65,
   },
   icon: {
     fontSize: 18,

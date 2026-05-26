@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
 import { usePlans } from '../context/PlansContext';
 import { useTheme } from '../context/useTheme';
+import { TYPOGRAPHY } from '../theme';
 import {
   PLAN_CATEGORIES,
   normalizeCategory,
@@ -172,7 +173,10 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
 
           <Pressable
             accessibilityRole="button"
-            style={styles.viewMenuButton}
+            style={({ pressed }) => [
+              styles.viewMenuButton,
+              pressed && { opacity: 0.75 },
+            ]}
             onPress={() => onOpenWeeklyPlan && onOpenWeeklyPlan()}
           >
             <AppText style={styles.viewMenuButtonText}>View Full Menu</AppText>
@@ -181,7 +185,11 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
           <Pressable
             accessibilityRole="button"
             disabled={!canPreorder}
-            style={[styles.preorderButton, !canPreorder && styles.preorderButtonDisabled]}
+            style={({ pressed }) => [
+              styles.preorderButton,
+              !canPreorder && styles.preorderButtonDisabled,
+              pressed && canPreorder && { opacity: 0.8 },
+            ]}
             onPress={() => canPreorder && onOpenCheckout(selectedPlan)}
           >
             <AppText style={[styles.preorderButtonText, !canPreorder && styles.preorderButtonTextDisabled]}>
@@ -208,13 +216,13 @@ const getStyles = (colors) => StyleSheet.create({
   },
   greeting: {
     color: colors.brand,
-    fontSize: 26,
-    fontWeight: '900',
+    fontSize: TYPOGRAPHY.xxl,
+    fontWeight: TYPOGRAPHY.extrabold,
     marginBottom: 6,
   },
   description: {
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: TYPOGRAPHY.sm,
     lineHeight: 20,
   },
   weekNavigator: {
@@ -249,15 +257,15 @@ const getStyles = (colors) => StyleSheet.create({
   },
   weekKicker: {
     color: colors.accent,
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: TYPOGRAPHY.xs,
+    fontWeight: TYPOGRAPHY.extrabold,
     marginBottom: 2,
     textTransform: 'uppercase',
   },
   weekRangeText: {
     color: colors.brand,
-    fontSize: 18,
-    fontWeight: '900',
+    fontSize: TYPOGRAPHY.lg,
+    fontWeight: TYPOGRAPHY.extrabold,
   },
   navHint: {
     color: colors.muted,
@@ -284,8 +292,8 @@ const getStyles = (colors) => StyleSheet.create({
   },
   categoryTabText: {
     color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '900',
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.extrabold,
   },
   categoryTabTextActive: {
     color: colors.surface,
@@ -324,13 +332,14 @@ const getStyles = (colors) => StyleSheet.create({
   },
   emptyTitle: {
     color: colors.brand,
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: TYPOGRAPHY.lg,
+    fontWeight: TYPOGRAPHY.extrabold,
     marginBottom: 8,
   },
   emptyText: {
     color: colors.textSecondary,
     lineHeight: 20,
+    fontSize: TYPOGRAPHY.sm,
   },
   planPanel: {
     backgroundColor: colors.surface,
@@ -348,20 +357,21 @@ const getStyles = (colors) => StyleSheet.create({
   },
   planCategory: {
     color: colors.accent,
-    fontSize: 12,
-    fontWeight: '900',
+    fontSize: TYPOGRAPHY.xs,
+    fontWeight: TYPOGRAPHY.extrabold,
     marginBottom: 4,
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   planTitle: {
     color: colors.brand,
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: TYPOGRAPHY.xl,
+    fontWeight: TYPOGRAPHY.extrabold,
   },
   planPrice: {
     color: colors.brand,
-    fontSize: 16,
-    fontWeight: '900',
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.extrabold,
   },
   planDescription: {
     color: colors.textSecondary,
@@ -379,8 +389,8 @@ const getStyles = (colors) => StyleSheet.create({
   },
   viewMenuButtonText: {
     color: colors.brand,
-    fontSize: 14,
-    fontWeight: '900',
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.extrabold,
   },
   preorderButton: {
     minHeight: 50,
@@ -394,15 +404,15 @@ const getStyles = (colors) => StyleSheet.create({
   },
   preorderButtonText: {
     color: colors.surface,
-    fontSize: 15,
-    fontWeight: '900',
+    fontSize: TYPOGRAPHY.base,
+    fontWeight: TYPOGRAPHY.extrabold,
   },
   preorderButtonTextDisabled: {
     color: colors.muted,
   },
   preorderReason: {
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: TYPOGRAPHY.xs,
     lineHeight: 17,
     marginTop: 10,
     textAlign: 'center',

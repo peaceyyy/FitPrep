@@ -1,8 +1,10 @@
 import AppText from '../components/AppText';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ScrollView, StyleSheet, View, Pressable, TextInput } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
+import { TYPOGRAPHY } from '../theme';
 
 const starLabels = ['Terrible', 'Bad', 'Okay', 'Good', 'Excellent'];
 const metricLabels = {
@@ -19,6 +21,8 @@ export default function ReviewScreen({ order, onBack, onSubmit }) {
     portion: 4,
     variety: 3,
   });
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   const planName = order?.published_weekly_plans?.name || 'Your Weekly Plan';
   const orderId = order?.id?.substring(0, 8).toUpperCase() || 'XXXXXXXX';
@@ -76,7 +80,10 @@ export default function ReviewScreen({ order, onBack, onSubmit }) {
       <HeaderBar title="Rate Your Week" onBack={onBack} />
 
       <View style={styles.heroCard}>
-        <View style={styles.heroImage} />
+        {/* Placeholder hero with icon — will be replaced by real meal image */}
+        <View style={styles.heroImage}>
+          <Ionicons name="restaurant-outline" size={48} color={colors.brand} style={{ opacity: 0.35 }} />
+        </View>
         <AppText style={styles.mealTitle}>{planName}</AppText>
         <AppText style={styles.mealSubtitle}>ORDER #{orderId} · WEEK COMPLETED</AppText>
       </View>
@@ -86,7 +93,13 @@ export default function ReviewScreen({ order, onBack, onSubmit }) {
         <AppText style={styles.reviewSubtext}>Tap a star to rate your overall meal experience this week</AppText>
         <View style={styles.ratingRow}>
           {[1, 2, 3, 4, 5].map((star) => (
-            <Pressable key={star} onPress={() => setRating(star)}>
+            <Pressable
+              key={star}
+              onPress={() => setRating(star)}
+              style={({ pressed }) => pressed && { transform: [{ scale: 1.2 }] }}
+              accessibilityRole="button"
+              accessibilityLabel={`Rate ${star} star${star > 1 ? 's' : ''}`}
+            >
               <AppText style={[styles.star, rating >= star ? styles.starActive : styles.starInactive]}>★</AppText>
             </Pressable>
           ))}
@@ -112,61 +125,77 @@ export default function ReviewScreen({ order, onBack, onSubmit }) {
         {Object.keys(metricLabels).map(renderMetric)}
       </View>
 
-      <Pressable style={styles.submitButton} onPress={handleSubmit}>
+      <Pressable
+        style={({ pressed }) => [
+          styles.submitButton,
+          pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] },
+        ]}
+        onPress={handleSubmit}
+        accessibilityRole="button"
+        accessibilityLabel="Submit review"
+      >
         <AppText style={styles.submitLabel}>Submit Demo Review →</AppText>
       </Pressable>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   root: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   content: {
     padding: 20,
     paddingBottom: 120,
   },
   heroCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     padding: 0,
     overflow: 'hidden',
     marginBottom: 22,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   heroImage: {
-    height: 220,
-    backgroundColor: '#d8e5d0',
+    height: 180,
+    backgroundColor: colors.surfaceGreen,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mealTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.brand,
+    fontSize: TYPOGRAPHY.xl,
+    fontWeight: TYPOGRAPHY.extrabold,
+    color: colors.brand,
     marginTop: 14,
     marginHorizontal: 18,
   },
   mealSubtitle: {
-    color: COLORS.muted,
-    fontSize: 13,
+    color: colors.muted,
+    fontSize: TYPOGRAPHY.xs,
+    letterSpacing: 0.5,
     marginHorizontal: 18,
     marginBottom: 18,
   },
   reviewCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     padding: 22,
     marginBottom: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   reviewHeading: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.brand,
+    fontSize: TYPOGRAPHY.lg,
+    fontWeight: TYPOGRAPHY.extrabold,
+    color: colors.brand,
     marginBottom: 6,
   },
   reviewSubtext: {
-    color: COLORS.muted,
+    color: colors.muted,
     marginBottom: 16,
     lineHeight: 20,
+    fontSize: TYPOGRAPHY.sm,
   },
   ratingRow: {
     flexDirection: 'row',
@@ -177,42 +206,49 @@ const styles = StyleSheet.create({
     fontSize: 34,
   },
   starActive: {
-    color: '#c8e472',
+    color: colors.accent,
   },
   starInactive: {
-    color: '#dcdcdc',
+    color: colors.border,
   },
   ratingLabel: {
     textAlign: 'center',
-    color: COLORS.muted,
-    fontWeight: '700',
+    color: colors.muted,
+    fontWeight: TYPOGRAPHY.bold,
+    fontSize: TYPOGRAPHY.sm,
   },
   commentCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     padding: 20,
     marginBottom: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   commentLabel: {
-    fontWeight: '700',
-    color: COLORS.brand,
+    fontWeight: TYPOGRAPHY.bold,
+    color: colors.brand,
     marginBottom: 12,
+    fontSize: TYPOGRAPHY.sm,
   },
   commentInput: {
     minHeight: 120,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: '#f4f7ee',
+    borderColor: colors.border,
+    backgroundColor: colors.inputBg,
     padding: 16,
-    color: COLORS.brand,
+    color: colors.brand,
     textAlignVertical: 'top',
+    fontSize: TYPOGRAPHY.base,
   },
   metricsCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 22,
     padding: 16,
     marginBottom: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   metricCard: {
     marginTop: 12,
@@ -223,8 +259,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   metricTitle: {
-    color: COLORS.muted,
-    fontWeight: '700',
+    color: colors.muted,
+    fontWeight: TYPOGRAPHY.bold,
+    fontSize: TYPOGRAPHY.sm,
   },
   metricOptions: {
     flexDirection: 'row',
@@ -236,46 +273,48 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#eef3e4',
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginRight: 8,
   },
   metricOptionActive: {
-    backgroundColor: COLORS.brand,
-    borderColor: COLORS.brand,
+    backgroundColor: colors.brand,
+    borderColor: colors.brand,
   },
   metricOptionText: {
-    color: COLORS.brand,
-    fontWeight: '800',
+    color: colors.brand,
+    fontWeight: TYPOGRAPHY.extrabold,
+    fontSize: TYPOGRAPHY.sm,
   },
   metricOptionTextActive: {
-    color: COLORS.surface,
+    color: colors.surface,
   },
   metricTrack: {
     height: 8,
-    backgroundColor: '#ebf3dc',
+    backgroundColor: colors.surfaceGreen,
     borderRadius: 999,
     overflow: 'hidden',
     marginBottom: 10,
   },
   metricFill: {
     height: '100%',
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
   },
   metricValue: {
-    color: COLORS.brand,
-    fontWeight: '800',
+    color: colors.brand,
+    fontWeight: TYPOGRAPHY.extrabold,
+    fontSize: TYPOGRAPHY.sm,
   },
   submitButton: {
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
     borderRadius: 20,
     paddingVertical: 16,
     alignItems: 'center',
   },
   submitLabel: {
-    color: COLORS.surface,
-    fontWeight: '800',
-    fontSize: 16,
+    color: colors.surface,
+    fontWeight: TYPOGRAPHY.extrabold,
+    fontSize: TYPOGRAPHY.md,
   },
 });

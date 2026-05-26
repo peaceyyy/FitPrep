@@ -69,7 +69,9 @@ export default function AdminUserDetailsScreen({ profileId, onBack }) {
   if (loading || !profile) {
     return (
       <View style={styles.root}>
-        <HeaderBar title="User Details" onBack={onBack} />
+        <View style={{ paddingHorizontal: 20 }}>
+          <HeaderBar title="User Details" onBack={onBack} />
+        </View>
         <View style={styles.centered}><AppText>Loading...</AppText></View>
       </View>
     );
@@ -77,8 +79,8 @@ export default function AdminUserDetailsScreen({ profileId, onBack }) {
 
   return (
     <View style={styles.root}>
-      <HeaderBar title="User Details" onBack={onBack} />
       <ScrollView contentContainerStyle={styles.content}>
+        <HeaderBar title="User Details" onBack={onBack} />
         
         <View style={styles.card}>
           <AppText style={styles.label}>FULL NAME</AppText>

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import HeaderBar from "../components/HeaderBar";
-import { COLORS } from "../theme";
+import { useTheme } from "../context/useTheme";
 import { usePlans } from "../context/PlansContext";
 import {
   DAY_ORDER,
@@ -63,11 +63,18 @@ function getReadiness(meals = []) {
     meals.map((meal) => normalizeDayLabel(meal.day_of_week)),
   );
   const readyCount = DAY_ORDER.filter((day) => readyDays.has(day)).length;
+  const missingDays = DAY_ORDER.filter((day) => !readyDays.has(day));
   return {
     readyCount,
+    missingDays,
     isReady: readyCount === DAY_ORDER.length,
     label: `${readyCount}/${DAY_ORDER.length} days ready`,
   };
+}
+
+function getEffectivePublished(plan, meals) {
+  if (!Array.isArray(meals)) return Boolean(plan.is_published);
+  return Boolean(plan.is_published) && getReadiness(meals).isReady;
 }
 
 export default function AdminMealsScreen({
@@ -77,6 +84,9 @@ export default function AdminMealsScreen({
   onBack,
 }) {
   const { plans, loading, error, source, removePlan } = usePlans();
+  const { colors, isDark, setTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   const [adminWeekStartDate, setAdminWeekStartDate] =
     useState(currentWeekStartDate);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -101,13 +111,14 @@ export default function AdminMealsScreen({
       weekPlans.filter((plan) => {
         const matchesCategory =
           selectedCategory === "all" || plan.category === selectedCategory;
+        const effectivePublished = getEffectivePublished(plan, mealSnapshots[plan.id]);
         const matchesStatus =
           selectedStatus === "all" ||
-          (selectedStatus === "published" && plan.is_published) ||
-          (selectedStatus === "draft" && !plan.is_published);
+          (selectedStatus === "published" && effectivePublished) ||
+          (selectedStatus === "draft" && !effectivePublished);
         return matchesCategory && matchesStatus;
       }),
-    [selectedCategory, selectedStatus, weekPlans],
+    [mealSnapshots, selectedCategory, selectedStatus, weekPlans],
   );
 
   const weekReadiness = useMemo(() => {
@@ -208,7 +219,12 @@ export default function AdminMealsScreen({
   };
 
   const renderPlanCard = ({ item: plan }) => {
-    const readiness = getReadiness(mealSnapshots[plan.id]);
+    const planMeals = mealSnapshots[plan.id];
+    const mealsChecked = Array.isArray(planMeals);
+    const readiness = mealsChecked
+      ? getReadiness(planMeals)
+      : { readyCount: 0, missingDays: [], isReady: false, label: "Checking meals..." };
+    const effectivePublished = getEffectivePublished(plan, planMeals);
 
     return (
       <View style={styles.planCard}>
@@ -227,11 +243,11 @@ export default function AdminMealsScreen({
           <View
             style={[
               styles.statusChip,
-              !plan.is_published && styles.statusChipMuted,
+              !effectivePublished && styles.statusChipMuted,
             ]}
           >
             <AppText style={styles.statusText}>
-              {plan.is_published ? "Published" : "Draft"}
+              {effectivePublished ? "Published" : "Draft"}
             </AppText>
           </View>
         </View>
@@ -251,6 +267,25 @@ export default function AdminMealsScreen({
           >
             {readiness.label}
           </AppText>
+          {mealsChecked && !readiness.isReady && (
+            <View style={styles.missingDaysRow}>
+              {readiness.missingDays.map((day) => (
+                <View key={day} style={styles.missingDayChip}>
+                  <View style={styles.missingDayDot} />
+                  <AppText style={styles.missingDayText}>{day}</AppText>
+                </View>
+              ))}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Fill missing meals for ${plan.name}`}
+                style={({ pressed }) => [styles.fillMissingPill, pressed && styles.pressed]}
+                onPress={() => onCreateMeal(plan, readiness.missingDays[0])}
+              >
+                <Feather name="plus-circle" size={13} color={colors.danger} />
+                <AppText style={styles.fillMissingText}>Add meals</AppText>
+              </Pressable>
+            </View>
+          )}
         </View>
 
         <View style={styles.footerRow}>
@@ -267,7 +302,7 @@ export default function AdminMealsScreen({
               ]}
               onPress={() => onCreateMeal(plan)}
             >
-              <Feather name="list" size={18} color={COLORS.brand} />
+              <Feather name="list" size={18} color={colors.brand} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -278,7 +313,7 @@ export default function AdminMealsScreen({
               ]}
               onPress={() => onEditPlan(plan)}
             >
-              <Feather name="edit-2" size={17} color={COLORS.brand} />
+              <Feather name="edit-2" size={17} color={colors.brand} />
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -289,7 +324,7 @@ export default function AdminMealsScreen({
               ]}
               onPress={() => handleDeletePlan(plan)}
             >
-              <Feather name="trash-2" size={17} color={COLORS.danger} />
+              <Feather name="trash-2" size={17} color={colors.danger} />
             </Pressable>
           </View>
         </View>
@@ -299,7 +334,15 @@ export default function AdminMealsScreen({
 
   const ListHeader = (
     <>
-      <HeaderBar title="Manage Plans" onBack={onBack} />
+      <HeaderBar 
+        title="Manage Plans" 
+        onBack={onBack} 
+        leftAction={{
+          icon: isDark ? "moon" : "sun",
+          onPress: () => setTheme(isDark ? "light" : "dark"),
+          label: "Toggle Theme",
+        }}
+      />
       <View style={styles.titleRow}>
         <View style={styles.titleCopy}>
           <AppText style={styles.title}>Weekly Plans</AppText>
@@ -311,7 +354,7 @@ export default function AdminMealsScreen({
           ]}
           onPress={() => handleCreatePlan()}
         >
-          <Feather name="plus" size={16} color={COLORS.surface} />
+          <Feather name="plus" size={16} color={colors.surface} />
           <AppText style={styles.createButtonText}>Plan</AppText>
         </Pressable>
       </View>
@@ -323,7 +366,7 @@ export default function AdminMealsScreen({
           style={styles.weekArrow}
           onPress={showPreviousWeek}
         >
-          <Feather name="chevron-left" size={22} color={COLORS.brand} />
+          <Feather name="chevron-left" size={22} color={colors.brand} />
         </Pressable>
         <View style={styles.weekRange}>
           <AppText style={styles.weekRangeText}>
@@ -340,7 +383,7 @@ export default function AdminMealsScreen({
           ]}
           onPress={showNextWeek}
         >
-          <Feather name="chevron-right" size={22} color={canShowNextWeek ? COLORS.brand : COLORS.muted} />
+          <Feather name="chevron-right" size={22} color={canShowNextWeek ? colors.brand : colors.muted} />
         </Pressable>
       </View>
 
@@ -357,7 +400,7 @@ export default function AdminMealsScreen({
           ]}
           onPress={() => setFilterSheetVisible(true)}
         >
-          <Feather name="filter" size={16} color={COLORS.brand} />
+          <Feather name="filter" size={16} color={colors.brand} />
           {activeFilterCount > 0 && <View style={styles.smallFilterBadge} />}
         </Pressable>
       </View>
@@ -367,7 +410,7 @@ export default function AdminMealsScreen({
   if (loading) {
     return (
       <View style={[styles.root, styles.centered]}>
-        <ActivityIndicator color={COLORS.accent} />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
@@ -453,7 +496,7 @@ export default function AdminMealsScreen({
                 ]}
                 onPress={() => setFilterSheetVisible(false)}
               >
-                <Feather name="x" size={20} color={COLORS.brand} />
+                <Feather name="x" size={20} color={colors.brand} />
               </Pressable>
             </View>
 
@@ -480,7 +523,7 @@ export default function AdminMealsScreen({
                       {category.label}
                     </AppText>
                     {isActive && (
-                      <Feather name="check" size={18} color={COLORS.brand} />
+                      <Feather name="check" size={18} color={colors.brand} />
                     )}
                   </Pressable>
                 );
@@ -510,7 +553,7 @@ export default function AdminMealsScreen({
                       {status.label}
                     </AppText>
                     {isActive && (
-                      <Feather name="check" size={18} color={COLORS.brand} />
+                      <Feather name="check" size={18} color={colors.brand} />
                     )}
                   </Pressable>
                 );
@@ -547,12 +590,12 @@ export default function AdminMealsScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
+const getStyles = (colors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   centered: { alignItems: "center", justifyContent: "center" },
   content: { padding: 20, paddingBottom: 140 },
   subHeading: {
-    color: COLORS.accent,
+    color: colors.accent,
     fontSize: 12,
     letterSpacing: 1.2,
     marginBottom: 6,
@@ -565,12 +608,12 @@ const styles = StyleSheet.create({
   },
   titleCopy: { flex: 1, paddingRight: 12 },
   title: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 28,
     fontWeight: "900",
     marginBottom: 6,
   },
-  titleMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: "700" },
+  titleMeta: { color: colors.textSecondary, fontSize: 12, fontWeight: "700" },
   createButton: {
     minHeight: 44,
     borderRadius: 16,
@@ -578,10 +621,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
   },
   createButtonText: {
-    color: COLORS.surface,
+    color: colors.surface,
     fontWeight: "900",
     fontSize: 12,
     textAlign: "center",
@@ -598,9 +641,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   weekArrowDisabled: { opacity: 0.45 },
   weekRange: {
@@ -612,11 +655,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 16,
-    backgroundColor: "#edf7d7",
+    backgroundColor: colors.surfaceGreen,
     borderWidth: 1,
-    borderColor: "#d9ebaf",
+    borderColor: colors.border,
   },
-  weekRangeText: { color: COLORS.brand, fontSize: 17, fontWeight: "900", textAlign: "center" },
+  weekRangeText: { color: colors.brand, fontSize: 17, fontWeight: "900", textAlign: "center" },
   sectionTitleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -624,9 +667,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 4,
   },
-  sectionTitle: { color: COLORS.brand, fontSize: 18, fontWeight: "900" },
+  sectionTitle: { color: colors.brand, fontSize: 18, fontWeight: "900" },
   sectionMeta: {
-    color: COLORS.muted,
+    color: colors.muted,
     fontSize: 12,
     fontWeight: "800",
     marginTop: 2,
@@ -637,9 +680,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#edf7d7",
+    backgroundColor: colors.surfaceGreen,
     borderWidth: 1,
-    borderColor: "#d9ebaf",
+    borderColor: colors.border,
   },
   smallFilterBadge: {
     position: "absolute",
@@ -648,15 +691,15 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
     borderWidth: 1,
-    borderColor: COLORS.surface,
+    borderColor: colors.surface,
   },
   planCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     padding: 16,
     marginBottom: 14,
   },
@@ -665,43 +708,81 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 18,
-    backgroundColor: "#e8ecdf",
+    backgroundColor: colors.surfaceGreen,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
-  categoryMarkText: { color: COLORS.brand, fontSize: 24, fontWeight: "900" },
+  categoryMarkText: { color: colors.brand, fontSize: 24, fontWeight: "900" },
   planTitleGroup: { flex: 1, paddingRight: 8 },
   planTitle: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 18,
     fontWeight: "900",
     marginBottom: 4,
   },
-  planCategory: { color: COLORS.accent, fontSize: 12, fontWeight: "900" },
+  planCategory: { color: colors.accent, fontSize: 12, fontWeight: "900" },
   statusChip: {
-    backgroundColor: "#dff4da",
+    backgroundColor: colors.highlightSubtle,
     borderRadius: 999,
     paddingVertical: 7,
     paddingHorizontal: 10,
   },
-  statusChipMuted: { backgroundColor: "#f0f1ea" },
-  statusText: { color: COLORS.brand, fontSize: 11, fontWeight: "800" },
+  statusChipMuted: { backgroundColor: colors.border },
+  statusText: { color: colors.brand, fontSize: 11, fontWeight: "800" },
   planSubtitle: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     lineHeight: 19,
     marginBottom: 12,
   },
   metaRow: { marginBottom: 14 },
   readinessText: { fontSize: 12, fontWeight: "900" },
-  readinessReady: { color: COLORS.success },
-  readinessMissing: { color: COLORS.danger },
+  readinessReady: { color: colors.success },
+  readinessMissing: { color: colors.danger },
+  missingDaysRow: { flexDirection: "row", flexWrap: "wrap", marginTop: 9 },
+  missingDayChip: {
+    minHeight: 26,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 999,
+    backgroundColor: colors.dangerSubtle,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  missingDayDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.danger,
+    marginRight: 5,
+  },
+  missingDayText: { color: colors.danger, fontSize: 11, fontWeight: "900" },
+  fillMissingPill: {
+    minHeight: 26,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    backgroundColor: colors.dangerSubtle,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    paddingHorizontal: 9,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  fillMissingText: {
+    color: colors.danger,
+    fontSize: 11,
+    fontWeight: "900",
+    marginLeft: 4,
+  },
   footerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  planPrice: { color: COLORS.accent, fontSize: 17, fontWeight: "900" },
+  planPrice: { color: colors.accent, fontSize: 17, fontWeight: "900" },
   controlsRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -711,7 +792,7 @@ const styles = StyleSheet.create({
   iconActionButton: {
     width: 44,
     height: 44,
-    backgroundColor: "#edf7d7",
+    backgroundColor: colors.surfaceGreen,
     borderRadius: 16,
     marginLeft: 8,
     alignItems: "center",
@@ -720,30 +801,30 @@ const styles = StyleSheet.create({
   iconDeleteButton: {
     width: 44,
     height: 44,
-    backgroundColor: COLORS.dangerSubtle,
+    backgroundColor: colors.dangerSubtle,
     borderRadius: 16,
     marginLeft: 8,
     alignItems: "center",
     justifyContent: "center",
   },
   emptyState: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 22,
     padding: 22,
     alignItems: "center",
     marginBottom: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   emptyTitle: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 18,
     fontWeight: "900",
     marginBottom: 8,
     textAlign: "center",
   },
   emptyText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 14,
@@ -752,19 +833,19 @@ const styles = StyleSheet.create({
   quickAction: {
     minHeight: 46,
     borderRadius: 16,
-    backgroundColor: "#edf7d7",
+    backgroundColor: colors.surfaceGreen,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
   },
-  quickActionText: { color: COLORS.brand, fontWeight: "900" },
+  quickActionText: { color: colors.brand, fontWeight: "900" },
   modalBackdrop: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(10, 22, 14, 0.35)",
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
   },
   filterSheet: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -777,24 +858,24 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   sheetTitle: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 20,
     fontWeight: "900",
     marginBottom: 4,
   },
-  sheetMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: "700" },
+  sheetMeta: { color: colors.textSecondary, fontSize: 12, fontWeight: "700" },
   sheetCloseButton: {
     width: 48,
     height: 48,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   sheetSectionLabel: {
-    color: COLORS.brand,
+    color: colors.brand,
     fontSize: 13,
     fontWeight: "900",
     marginBottom: 8,
@@ -806,20 +887,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: 14,
     marginBottom: 8,
   },
-  sheetOptionActive: { backgroundColor: "#edf7d7", borderColor: "#d9ebaf" },
+  sheetOptionActive: { backgroundColor: colors.surfaceGreen, borderColor: colors.border },
   sheetOptionText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: "800",
   },
-  sheetOptionTextActive: { color: COLORS.brand },
+  sheetOptionTextActive: { color: colors.brand },
   sheetActions: { flexDirection: "row", marginTop: 8 },
   sheetSecondaryAction: {
     flex: 1,
@@ -827,20 +908,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginRight: 10,
   },
-  sheetSecondaryText: { color: COLORS.brand, fontWeight: "900" },
+  sheetSecondaryText: { color: colors.brand, fontWeight: "900" },
   sheetPrimaryAction: {
     flex: 1,
     minHeight: 48,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
   },
-  sheetPrimaryText: { color: COLORS.surface, fontWeight: "900" },
-  pressed: { opacity: 0.75 },
+  sheetPrimaryText: { color: colors.surface, fontWeight: "900" },
+  pressed: { opacity: 0.7 },
 });

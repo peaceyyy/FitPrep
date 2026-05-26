@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Pressable, TextInput, Alert, ActivityIndicator } from 'react-native';
 import AppText from '../components/AppText';
 import HeaderBar from '../components/HeaderBar';
-import { COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
 import { profilesService } from '../services/profilesService';
 import { Feather } from '@expo/vector-icons';
 
 export default function AdminUsersScreen({ onOpenUserDetails, onBack }) {
+  const { colors, isDark, setTheme } = useTheme();
+  const styles = React.useMemo(() => getStyles(colors), [colors]);
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,7 +63,10 @@ export default function AdminUsersScreen({ onOpenUserDetails, onBack }) {
   const renderItem = ({ item }) => (
     <Pressable style={styles.card} onPress={() => onOpenUserDetails(item.id)}>
       <View style={styles.cardHeader}>
-        <AppText style={styles.name}>{item.full_name || 'No Name'}</AppText>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={[styles.statusDot, item.status === 'disabled' && styles.statusDotDisabled]} />
+          <AppText style={styles.name}>{item.full_name || 'No Name'}</AppText>
+        </View>
         <View style={[styles.badge, item.role === 'admin' && styles.adminBadge]}>
           <AppText style={[styles.badgeText, item.role === 'admin' && styles.adminBadgeText]}>
             {item.role.toUpperCase()}
@@ -70,12 +76,6 @@ export default function AdminUsersScreen({ onOpenUserDetails, onBack }) {
       <AppText style={styles.email}>{item.email}</AppText>
       
       <View style={styles.footerRow}>
-        <View style={styles.statusRow}>
-          <View style={[styles.statusDot, item.status === 'disabled' && styles.statusDotDisabled]} />
-          <AppText style={styles.statusText}>
-            {item.status === 'disabled' ? 'Blocked' : 'Active'}
-          </AppText>
-        </View>
 
         {processingId === item.id ? (
           <ActivityIndicator size="small" color={COLORS.brand} />
@@ -93,69 +93,82 @@ export default function AdminUsersScreen({ onOpenUserDetails, onBack }) {
     </Pressable>
   );
 
-  return (
-    <View style={styles.root}>
-      <HeaderBar title="Manage Users" onBack={onBack} />
+  const renderHeader = () => (
+    <View style={{ marginBottom: 16 }}>
+      <HeaderBar 
+        title="Manage Users" 
+        onBack={onBack} 
+        action={{
+          icon: isDark ? "moon" : "sun",
+          onPress: () => setTheme(isDark ? "light" : "dark"),
+          label: "Toggle Theme",
+        }}
+      />
       
       <View style={styles.searchContainer}>
-        <Feather name="search" size={20} color={COLORS.muted} style={styles.searchIcon} />
+        <Feather name="search" size={20} color={colors.muted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name or email..."
-          placeholderTextColor={COLORS.textTertiary}
+          placeholderTextColor={colors.textTertiary}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
         />
         {searchQuery.length > 0 && (
           <Pressable onPress={() => setSearchQuery('')} style={styles.clearBtn}>
-            <Feather name="x" size={18} color={COLORS.muted} />
+            <Feather name="x" size={18} color={colors.muted} />
           </Pressable>
         )}
       </View>
-
-      {loading ? (
-        <View style={styles.centered}><AppText>Loading...</AppText></View>
-      ) : (
-        <FlatList
-          data={filteredUsers}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={<AppText style={styles.empty}>No users found.</AppText>}
-        />
-      )}
     </View>
+  );
+
+  return (
+    <FlatList
+      style={styles.root}
+      data={loading ? [] : filteredUsers}
+      keyExtractor={(item) => item.id}
+      renderItem={renderItem}
+      contentContainerStyle={styles.list}
+      ListHeaderComponent={renderHeader}
+      ListEmptyComponent={
+        loading ? (
+          <View style={styles.centered}><ActivityIndicator color={colors.accent} /></View>
+        ) : (
+          <AppText style={styles.empty}>No users found.</AppText>
+        )
+      }
+    />
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
+const getStyles = (colors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    marginHorizontal: 20,
+    backgroundColor: colors.surface,
     marginTop: 10,
     marginBottom: 5,
     borderRadius: 16,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, height: 48, fontSize: 15, color: COLORS.brand },
+  searchInput: { flex: 1, height: 48, fontSize: 15, color: colors.brand },
   clearBtn: { padding: 4 },
   list: { padding: 20 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  empty: { textAlign: 'center', color: COLORS.muted, marginTop: 40 },
+  empty: { textAlign: 'center', color: colors.muted, marginTop: 40 },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     padding: 16,
     borderRadius: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -163,29 +176,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  name: { fontSize: 16, fontWeight: '700', color: COLORS.brand },
-  email: { fontSize: 14, color: COLORS.muted, marginBottom: 12 },
+  name: { fontSize: 16, fontWeight: '700', color: colors.brand },
+  email: { fontSize: 14, color: colors.muted, marginBottom: 12 },
   badge: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceGreen,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
-  badgeText: { fontSize: 10, fontWeight: '700', color: '#64748b' },
-  adminBadge: { backgroundColor: '#e0e7ff' },
-  adminBadgeText: { color: '#4338ca' },
-  footerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  statusRow: { flexDirection: 'row', alignItems: 'center' },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#22c55e', marginRight: 6 },
-  statusDotDisabled: { backgroundColor: '#ef4444' },
-  statusText: { fontSize: 12, color: COLORS.muted, fontWeight: '600' },
+  badgeText: { fontSize: 10, fontWeight: '700', color: colors.textSecondary },
+  adminBadge: { backgroundColor: colors.highlightSubtle },
+  adminBadgeText: { color: colors.accent },
+  footerRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, marginRight: 8 },
+  statusDotDisabled: { backgroundColor: colors.danger },
   actionBtn: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: colors.dangerSubtle,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 8,
   },
-  actionBtnText: { color: '#ef4444', fontSize: 12, fontWeight: '700' },
-  actionBtnUnblock: { backgroundColor: '#f1f5f9' },
-  actionBtnTextUnblock: { color: COLORS.brand },
+  actionBtnText: { color: colors.danger, fontSize: 12, fontWeight: '700' },
+  actionBtnUnblock: { backgroundColor: colors.surfaceGreen },
+  actionBtnTextUnblock: { color: colors.brand },
 });

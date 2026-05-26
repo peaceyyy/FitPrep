@@ -1,5 +1,5 @@
 import AppText from '../components/AppText';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View, Pressable, Alert, ActivityIndicator, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
@@ -9,6 +9,25 @@ import { addMealToPlan, deleteMeal, updateMeal } from '../services/mealsService'
 import { normalizeDayLabel, MEAL_TYPES } from '../services/plansService';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const SHORT_DAY_TO_FULL = {
+  Mon: 'Monday',
+  Tue: 'Tuesday',
+  Wed: 'Wednesday',
+  Thu: 'Thursday',
+  Fri: 'Friday',
+  Sat: 'Saturday',
+  Sun: 'Sunday',
+};
+
+function normalizeInitialDay(day) {
+  if (DAYS.includes(day)) return day;
+  return SHORT_DAY_TO_FULL[day] || 'Monday';
+}
+
+function hasMissingDay(meals = []) {
+  const readyDays = new Set(meals.map((meal) => normalizeDayLabel(meal.day_of_week)));
+  return DAYS.some((day) => !readyDays.has(normalizeDayLabel(day)));
+}
 
 function normalizeNumberText(value) {
   const parsed = parseInt(value, 10);
@@ -58,10 +77,10 @@ function MacroStepper({ label, value, onChangeText, step = 1 }) {
   );
 }
 
-export default function AdminMealForm({ initialPlanId, onBack }) {
-  const { loadMealsForPlan, loadPlans, meals, plans } = usePlans();
+export default function AdminMealForm({ initialPlanId, initialDay, onBack }) {
+  const { loadMealsForPlan, loadPlans, meals, plans, savePlan } = usePlans();
   const [selectedPlanId, setSelectedPlanId] = useState(initialPlanId || plans?.[0]?.id || null);
-  const [selectedDay, setSelectedDay] = useState('Monday');
+  const [selectedDay, setSelectedDay] = useState(normalizeInitialDay(initialDay));
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingMealId, setEditingMealId] = useState(null);
   const [mealName, setMealName] = useState('');
@@ -76,6 +95,9 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
   const activePlan = plans?.find((p) => p.id === selectedPlanId);
   const selectedDayLabel = normalizeDayLabel(selectedDay);
   const existingMeals = meals.filter((meal) => normalizeDayLabel(meal.day_of_week) === selectedDayLabel);
+  const readyDayLabels = useMemo(() => (
+    new Set(meals.map((meal) => normalizeDayLabel(meal.day_of_week)))
+  ), [meals]);
 
   useEffect(() => {
     if (initialPlanId) {
@@ -92,6 +114,12 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
       loadMealsForPlan(activePlan);
     }
   }, [activePlan, loadMealsForPlan]);
+
+  useEffect(() => {
+    if (initialDay) {
+      setSelectedDay(normalizeInitialDay(initialDay));
+    }
+  }, [initialDay]);
 
   const resetMealForm = () => {
     setEditingMealId(null);
@@ -126,10 +154,21 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            const remainingMeals = meals.filter((existingMeal) => existingMeal.id !== meal.id);
             const { error } = await deleteMeal(meal.id);
             if (error) {
               Alert.alert('Delete Failed', error.message);
               return;
+            }
+            if (activePlan?.is_published && hasMissingDay(remainingMeals)) {
+              await savePlan({
+                week_start_date: activePlan.week_start_date,
+                name: activePlan.name,
+                category: activePlan.category,
+                description: activePlan.description || '',
+                weekly_price: Number(activePlan.weekly_price) || 0,
+                is_published: false,
+              }, activePlan.id);
             }
             if (activePlan) {
               loadMealsForPlan(activePlan);
@@ -193,17 +232,21 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
 
         <AppText style={styles.fieldLabel}>Day of Week</AppText>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-          {DAYS.map((day) => (
-            <Pressable
-              key={day}
-              style={[styles.chip, selectedDay === day && styles.chipActive]}
-              onPress={() => setSelectedDay(day)}
-            >
-              <AppText style={[styles.chipText, selectedDay === day && styles.chipTextActive]}>
-                {day.slice(0, 3)}
-              </AppText>
-            </Pressable>
-          ))}
+          {DAYS.map((day) => {
+            const isMissing = !readyDayLabels.has(normalizeDayLabel(day));
+            return (
+              <Pressable
+                key={day}
+                style={[styles.chip, selectedDay === day && styles.chipActive]}
+                onPress={() => setSelectedDay(day)}
+              >
+                <AppText style={[styles.chipText, selectedDay === day && styles.chipTextActive]}>
+                  {day.slice(0, 3)}
+                </AppText>
+                {isMissing && <View style={[styles.missingDot, selectedDay === day && styles.missingDotActive]} />}
+              </Pressable>
+            );
+          })}
         </ScrollView>
 
         <View style={styles.existingSection}>
@@ -215,7 +258,10 @@ export default function AdminMealForm({ initialPlanId, onBack }) {
             </Pressable>
           </View>
           {existingMeals.length === 0 && (
-            <AppText style={styles.existingEmpty}>No meals scheduled for this day yet.</AppText>
+            <View style={styles.emptyMealNotice}>
+              <View style={styles.emptyMealDot} />
+              <AppText style={styles.existingEmpty}>Missing day: add at least one meal before this plan can be published.</AppText>
+            </View>
           )}
           {existingMeals.map((meal) => (
             <View key={meal.id} style={styles.existingMealCard}>
@@ -346,6 +392,10 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: COLORS.brand, borderColor: COLORS.brand },
   chipText: { color: COLORS.textSecondary, fontWeight: '700' },
   chipTextActive: { color: COLORS.surface },
+  missingDot: { position: 'absolute', top: 6, right: 8, width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.danger },
+  missingDotActive: { backgroundColor: COLORS.surface },
+  emptyMealNotice: { flexDirection: 'row', alignItems: 'flex-start' },
+  emptyMealDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.danger, marginTop: 5, marginRight: 8 },
   input: { backgroundColor: COLORS.inputBg, borderRadius: 16, padding: 16, color: COLORS.brand },
   textarea: { minHeight: 90, textAlignVertical: 'top' },
   macroRow: { flexDirection: 'row', gap: 12 },

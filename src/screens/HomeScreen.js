@@ -8,14 +8,17 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import HeaderBar from "../components/HeaderBar";
 import { useTheme } from "../context/useTheme";
 import { usePlans } from "../context/PlansContext";
+import { TYPOGRAPHY } from "../theme";
 import {
   DAY_ORDER,
   formatWeekRange,
   getDaySortIndex,
+  getNextWeekStartDate,
   getTodayDayLabel,
   normalizeDayLabel,
   normalizeCategory,
@@ -79,65 +82,66 @@ function getOrderWeekStart(order) {
 }
 
 // ─── Macro Ring Component ────────────────────────────────────────────────────
+// Uses react-native-svg for a real animated progress arc (strokeDashoffset technique)
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 function MacroRing({ value, max, label, unit, color }) {
-  const { colors, isDark } = useTheme();
-  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
-  const animValue = useRef(new Animated.Value(0)).current;
+  const { colors } = useTheme();
+  const styles = useMemo(() => getStyles(colors, false), [colors]);
+  const animProgress = useRef(new Animated.Value(0)).current;
+
+  const SIZE = 82;
+  const STROKE = 7;
+  const RADIUS = (SIZE - STROKE) / 2;
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
   const safeMax = max > 0 ? max : 1;
   const ratio = Math.min(value / safeMax, 1);
 
   useEffect(() => {
-    Animated.timing(animValue, {
+    Animated.timing(animProgress, {
       toValue: ratio,
       duration: 900,
-      useNativeDriver: false,
+      useNativeDriver: false, // SVG props require JS driver
     }).start();
   }, [ratio]);
 
-  const SIZE = 82;
-  const STROKE = 7;
-  const INNER = SIZE - STROKE * 2;
-
-  // We build a ring using two half-circle Views rotated
-  const borderColor = animValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [colors.border, color],
+  // Maps 0→1 progress to full circumference → 0 offset (full arc)
+  const strokeDashoffset = animProgress.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [CIRCUMFERENCE, 0],
   });
 
   return (
     <View style={styles.macroRingWrapper}>
-      <View
-        style={[
-          styles.macroRingOuter,
-          { width: SIZE, height: SIZE, borderRadius: SIZE / 2 },
-        ]}
-      >
-        {/* Track */}
-        <View
-          style={[
-            styles.macroRingTrack,
-            {
-              width: SIZE,
-              height: SIZE,
-              borderRadius: SIZE / 2,
-              borderWidth: STROKE,
-            },
-          ]}
-        />
-
-        <Animated.View
-          style={[
-            styles.macroRingFill,
-            {
-              width: SIZE,
-              height: SIZE,
-              borderRadius: SIZE / 2,
-              borderWidth: STROKE,
-              borderColor,
-            },
-          ]}
-        />
-
+      {/* SVG ring — track + animated progress arc */}
+      <View style={{ width: SIZE, height: SIZE }}>
+        <Svg width={SIZE} height={SIZE}>
+          {/* Track circle */}
+          <Circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={RADIUS}
+            stroke={colors.border}
+            strokeWidth={STROKE}
+            fill="none"
+          />
+          {/* Progress arc — rotated -90° so it starts from 12 o'clock */}
+          <AnimatedCircle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={RADIUS}
+            stroke={color}
+            strokeWidth={STROKE}
+            fill="none"
+            strokeDasharray={CIRCUMFERENCE}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            rotation="-90"
+            origin={`${SIZE / 2}, ${SIZE / 2}`}
+          />
+        </Svg>
+        {/* Center content absolutely positioned over the SVG */}
         <View style={styles.macroRingCenter}>
           <AppText style={[styles.macroRingValue, { color: colors.brand }]}>
             {value}
@@ -151,33 +155,31 @@ function MacroRing({ value, max, label, unit, color }) {
 }
 
 // ─── Streak Badge ────────────────────────────────────────────────────────────
+// TODO: Wire `streak` to real user session data before re-enabling this badge.
+// Currently hidden because the hardcoded value (5) would mislead users.
 function StreakBadge({ streak = 0 }) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1.08,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
+    // Pulse 3 times then settle — prevents permanent visual noise
+    let count = 0;
+    const step = Animated.sequence([
+      Animated.timing(pulse, { toValue: 1.08, duration: 700, useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 1,    duration: 700, useNativeDriver: true }),
+    ]);
+    const loop = Animated.loop(step, { iterations: 3 });
+    loop.start();
+    return () => loop.stop();
   }, []);
 
   return (
     <Animated.View
       style={[styles.streakBadge, { transform: [{ scale: pulse }] }]}
+      accessibilityLabel={`${streak}-day streak`}
     >
-      <AppText style={styles.streakFire}>🔥</AppText>
+      <Ionicons name="flame" size={15} color="#f5c842" style={{ marginRight: 5 }} />
       <AppText style={styles.streakText}>{streak}-day streak</AppText>
     </Animated.View>
   );
@@ -245,6 +247,8 @@ function UnsubscribedHero({
             pressed && styles.unsubCTAPressed,
           ]}
           onPress={hasUpcomingPreorder ? onNavigateToOrders : onNavigateToPlans}
+          accessibilityRole="button"
+          accessibilityLabel={hasUpcomingPreorder ? "View orders" : "Browse meal plans"}
         >
           <AppText style={styles.unsubCTAText}>
             {hasUpcomingPreorder ? "View Orders" : "Browse Plans"}
@@ -289,9 +293,15 @@ export default function HomeScreen({
     ordersLoading,
     selectedPlanMeals,
     subscriptionForWeek,
+    setBrowsingWeek,
     setSelectedCategory,
     showCurrentWeek,
   } = usePlans();
+
+  const handleBrowsePlans = () => {
+    setBrowsingWeek(getNextWeekStartDate(currentWeekStartDate));
+    if (onNavigateToPlans) onNavigateToPlans();
+  };
 
   const isCurrentWeek = browsingWeekStartDate === currentWeekStartDate;
   const todayLabel = getTodayDayLabel();
@@ -369,7 +379,8 @@ export default function HomeScreen({
             </AppText>
           </View>
 
-          {isSubscribed && <StreakBadge streak={5} />}
+          {/* TODO: Re-enable when streak data is wired to real backend */}
+          {/* {isSubscribed && <StreakBadge streak={5} />} */}
         </View>
 
         {isSubscribed && subscriptionPlan && (
@@ -389,8 +400,8 @@ export default function HomeScreen({
       {/* ── Unsubscribed State ── */}
       {!loading && !isSubscribed && (
         <UnsubscribedHero
-          onNavigateToPlans={onNavigateToPlans}
-          onNavigateToOrders={onNavigateToOrders || onNavigateToPlans}
+          onNavigateToPlans={handleBrowsePlans}
+          onNavigateToOrders={onNavigateToOrders}
           upcomingPreorder={ordersLoading ? null : upcomingPreorder}
         />
       )}
@@ -536,6 +547,7 @@ export default function HomeScreen({
           {/* Week CTA */}
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel="View full week menu"
             style={({ pressed }) => [
               styles.weekSummaryButton,
               pressed && styles.weekSummaryButtonPressed,
@@ -599,23 +611,25 @@ function MealCard({ meal, index }) {
       <View style={styles.mealCardBody}>
         <AppText style={styles.todayMealTitle}>{meal.meal_name}</AppText>
         <View style={styles.mealMacroRow}>
-          <MacroPill icon="🔥" value={`${meal.calories || 0}`} label="kcal" />
-          <MacroPill icon="💪" value={`${meal.protein_g || 0}g`} label="P" />
-          <MacroPill icon="🌾" value={`${meal.carbs_g || 0}g`} label="C" />
-          <MacroPill icon="🫒" value={`${meal.fats_g || 0}g`} label="F" />
+          <MacroPill iconName="flame-outline"    value={`${meal.calories || 0}`}  label="kcal" />
+          <MacroPill iconName="barbell-outline"  value={`${meal.protein_g || 0}g`} label="P" />
+          <MacroPill iconName="leaf-outline"     value={`${meal.carbs_g || 0}g`}  label="C" />
+          <MacroPill iconName="water-outline"    value={`${meal.fats_g || 0}g`}   label="F" />
         </View>
       </View>
     </Animated.View>
   );
 }
 
-function MacroPill({ icon, value, label }) {
+// MacroPill — displays a single macro stat with an icon + value + label
+function MacroPill({ iconName, value, label }) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   return (
-    <View style={styles.macroPill}>
-      <AppText style={styles.macroPillIcon}>{icon}</AppText>
+    <View style={styles.macroPill} accessibilityLabel={`${value} ${label}`}>
+      <Ionicons name={iconName} size={11} color={colors.accent} />
       <AppText style={styles.macroPillValue}>{value}</AppText>
+      <AppText style={styles.macroPillLabel}>{label}</AppText>
     </View>
   );
 }
@@ -646,23 +660,23 @@ const getStyles = (colors, isDark) =>
     },
     greetingSmall: {
       color: colors.textSecondary,
-      fontSize: 13,
-      fontWeight: "600",
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: TYPOGRAPHY.semibold,
       marginBottom: 2,
       textTransform: "uppercase",
       letterSpacing: 1,
     },
     greeting: {
       color: colors.textPrimary,
-      fontSize: 30,
-      fontWeight: "900",
+      fontSize: TYPOGRAPHY.hero,    // hero moment — black weight is justified here
+      fontWeight: TYPOGRAPHY.black,
       marginBottom: 2,
       lineHeight: 36,
     },
     dayLabel: {
       color: colors.textSecondary,
-      fontSize: 14,
-      fontWeight: "600",
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: TYPOGRAPHY.semibold,
       marginBottom: 10,
     },
     planBadge: {
@@ -686,8 +700,8 @@ const getStyles = (colors, isDark) =>
     },
     planBadgeText: {
       color: colors.brand,
-      fontSize: 12,
-      fontWeight: "800",
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: TYPOGRAPHY.extrabold,
     },
 
     // ── Streak Badge ──
@@ -712,8 +726,8 @@ const getStyles = (colors, isDark) =>
     },
     streakText: {
       color: isDark ? "#f5c842" : "#a07800",
-      fontSize: 12,
-      fontWeight: "900",
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: TYPOGRAPHY.extrabold,
     },
 
     // ── Loader ──
@@ -770,10 +784,11 @@ const getStyles = (colors, isDark) =>
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: colors.accent,
-      borderRadius: 999,
-      paddingVertical: 14,
+      borderRadius: 18,
+      paddingVertical: 16,
       paddingHorizontal: 28,
-      alignSelf: "flex-start",
+      // Full-width CTA feels more intentional than a narrow pill
+      alignSelf: "stretch",
       gap: 8,
       marginBottom: 24,
       shadowColor: colors.accent,
@@ -823,8 +838,8 @@ const getStyles = (colors, isDark) =>
     },
     macroSectionTitle: {
       color: colors.textPrimary,
-      fontSize: 18,
-      fontWeight: "900",
+      fontSize: TYPOGRAPHY.md,
+      fontWeight: TYPOGRAPHY.extrabold,
       marginBottom: 14,
     },
     macroRingsRow: {
@@ -843,43 +858,32 @@ const getStyles = (colors, isDark) =>
     },
     macroRingWrapper: {
       alignItems: "center",
-    },
-    macroRingOuter: {
-      alignItems: "center",
-      justifyContent: "center",
-      position: "relative",
-      marginBottom: 8,
-    },
-    macroRingTrack: {
-      position: "absolute",
-      borderColor: colors.border,
-      backgroundColor: "transparent",
-    },
-    macroRingFill: {
-      position: "absolute",
-      backgroundColor: "transparent",
-      borderTopColor: "transparent",
-      borderLeftColor: "transparent",
+      gap: 8,
     },
     macroRingCenter: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       alignItems: "center",
-      zIndex: 1,
+      justifyContent: "center",
     },
     macroRingValue: {
-      fontSize: 15,
-      fontWeight: "900",
+      fontSize: TYPOGRAPHY.base,
+      fontWeight: TYPOGRAPHY.extrabold,
     },
     macroRingUnit: {
       color: colors.muted,
-      fontSize: 9,
-      fontWeight: "700",
+      fontSize: TYPOGRAPHY.xs - 2,  // intentionally small unit label
+      fontWeight: TYPOGRAPHY.bold,
       textTransform: "uppercase",
       letterSpacing: 0.5,
     },
     macroRingLabel: {
       color: colors.textSecondary,
-      fontSize: 10,
-      fontWeight: "800",
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: TYPOGRAPHY.bold,
       textTransform: "uppercase",
       letterSpacing: 0.5,
     },
@@ -893,8 +897,8 @@ const getStyles = (colors, isDark) =>
     },
     sectionTitle: {
       color: colors.textPrimary,
-      fontSize: 18,
-      fontWeight: "900",
+      fontSize: TYPOGRAPHY.md,
+      fontWeight: TYPOGRAPHY.extrabold,
     },
     sectionMetaBadge: {
       backgroundColor: colors.highlightSubtle,
@@ -904,8 +908,8 @@ const getStyles = (colors, isDark) =>
     },
     sectionMeta: {
       color: colors.accent,
-      fontSize: 11,
-      fontWeight: "900",
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: TYPOGRAPHY.bold,
       textTransform: "uppercase",
       letterSpacing: 0.5,
     },
@@ -938,31 +942,33 @@ const getStyles = (colors, isDark) =>
     },
     todayMealTitle: {
       color: colors.textPrimary,
-      fontSize: 15,
-      fontWeight: "900",
+      fontSize: TYPOGRAPHY.base,
+      fontWeight: TYPOGRAPHY.extrabold,
       marginBottom: 8,
     },
     mealMacroRow: {
       flexDirection: "row",
-      gap: 8,
+      gap: 6,
       flexWrap: "wrap",
     },
     macroPill: {
       flexDirection: "row",
       alignItems: "center",
-      backgroundColor: colors.background,
+      backgroundColor: colors.inputBg,
       borderRadius: 999,
-      paddingVertical: 3,
+      paddingVertical: 4,
       paddingHorizontal: 9,
       gap: 4,
     },
-    macroPillIcon: {
-      fontSize: 10,
-    },
     macroPillValue: {
       color: colors.brand,
-      fontSize: 11,
-      fontWeight: "800",
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: TYPOGRAPHY.extrabold,
+    },
+    macroPillLabel: {
+      color: colors.muted,
+      fontSize: TYPOGRAPHY.xs - 1,
+      fontWeight: TYPOGRAPHY.semibold,
     },
 
     // ── Soft Notice ──
@@ -973,8 +979,9 @@ const getStyles = (colors, isDark) =>
       marginBottom: 20,
       alignItems: "center",
       borderWidth: 1,
+      // Solid border — dashed can render inconsistently on Android
       borderColor: colors.border,
-      borderStyle: "dashed",
+      opacity: 0.85,
     },
     softNoticeText: {
       color: colors.textSecondary,
@@ -1018,22 +1025,22 @@ const getStyles = (colors, isDark) =>
     },
     dayBadgeText: {
       color: colors.brand,
-      fontSize: 12,
-      fontWeight: "900",
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: TYPOGRAPHY.extrabold,
     },
     dayMeals: {
       flex: 1,
     },
     dayMealText: {
       color: colors.textPrimary,
-      fontSize: 13,
-      fontWeight: "700",
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: TYPOGRAPHY.bold,
       marginBottom: 2,
     },
     moreMeals: {
       color: colors.accent,
-      fontSize: 12,
-      fontWeight: "900",
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: TYPOGRAPHY.extrabold,
     },
 
     // ── Week CTA ──
@@ -1059,7 +1066,7 @@ const getStyles = (colors, isDark) =>
     },
     weekSummaryButtonText: {
       color: colors.brand,
-      fontSize: 15,
-      fontWeight: "900",
+      fontSize: TYPOGRAPHY.base,
+      fontWeight: TYPOGRAPHY.extrabold,
     },
   });

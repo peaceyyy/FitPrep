@@ -1,16 +1,16 @@
 import AppText from '../components/AppText';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ScrollView,
   StyleSheet,
   TextInput,
   View,
   Pressable,
-  TouchableOpacity,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import BrandMark from '../components/BrandMark';
-import { COLORS } from '../theme';
+import { TYPOGRAPHY, COLORS } from '../theme';
+import { useTheme } from '../context/useTheme';
 import { supabase } from '../lib/supabaseClient';
 
 export default function LoginScreen({ onNavigateRegister }) {
@@ -19,6 +19,8 @@ export default function LoginScreen({ onNavigateRegister }) {
   const [secureEntry, setSecureEntry] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const colors = COLORS;
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -36,11 +38,11 @@ export default function LoginScreen({ onNavigateRegister }) {
         <View style={styles.fieldGroup}>
           <AppText style={styles.fieldLabel}>Email Address</AppText>
           <View style={styles.inputRow}>
-            <Feather name="mail" size={18} color={COLORS.muted} style={styles.inputIcon} />
+            <Feather name="mail" size={18} color={colors.muted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="name@example.com"
-              placeholderTextColor={COLORS.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -52,17 +54,22 @@ export default function LoginScreen({ onNavigateRegister }) {
         <View style={styles.fieldGroup}>
           <AppText style={styles.fieldLabel}>Password</AppText>
           <View style={styles.inputRow}>
-            <Feather name="lock" size={18} color={COLORS.muted} style={styles.inputIcon} />
+            <Feather name="lock" size={18} color={colors.muted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="•••••••••"
-              placeholderTextColor={COLORS.textTertiary}
+              placeholderTextColor={colors.textTertiary}
               secureTextEntry={secureEntry}
               value={password}
               onChangeText={setPassword}
             />
-            <Pressable onPress={() => setSecureEntry((prev) => !prev)}>
-              <Feather name={secureEntry ? 'eye' : 'eye-off'} size={18} color={COLORS.muted} style={styles.eyeIcon} />
+            <Pressable
+              onPress={() => setSecureEntry((prev) => !prev)}
+              accessibilityRole="button"
+              accessibilityLabel={secureEntry ? 'Show password' : 'Hide password'}
+              style={({ pressed }) => pressed && { opacity: 0.6 }}
+            >
+              <Feather name={secureEntry ? 'eye' : 'eye-off'} size={18} color={colors.muted} style={styles.eyeIcon} />
             </Pressable>
           </View>
         </View>
@@ -92,10 +99,15 @@ export default function LoginScreen({ onNavigateRegister }) {
         </Pressable>
 
         <View style={styles.bottomRow}>
-          <AppText style={styles.bottomText}>Don’t have an account?</AppText>
-          <TouchableOpacity onPress={onNavigateRegister}>
+          <AppText style={styles.bottomText}>Don't have an account?</AppText>
+          <Pressable
+            onPress={onNavigateRegister}
+            style={({ pressed }) => pressed && { opacity: 0.7 }}
+            accessibilityRole="button"
+            accessibilityLabel="Sign up for an account"
+          >
             <AppText style={styles.bottomLink}> Sign up</AppText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
 
@@ -104,22 +116,23 @@ export default function LoginScreen({ onNavigateRegister }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   content: {
     alignItems: 'center',
     padding: 16,
     paddingBottom: 30,
   },
   errorText: {
-    color: COLORS.danger,
+    color: colors.danger,
     marginBottom: 16,
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: TYPOGRAPHY.semibold,
+    fontSize: TYPOGRAPHY.sm,
   },
   card: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 28,
     padding: 24,
     marginTop: 12,
@@ -136,28 +149,28 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   brandTitle: {
-    color: COLORS.brand,
-    fontSize: 30,
-    fontWeight: '800',
+    color: colors.brand,
+    fontSize: TYPOGRAPHY.xxl,
+    fontWeight: TYPOGRAPHY.extrabold,
     textAlign: 'center',
   },
   brandSubtitle: {
-    color: COLORS.textTertiary,
-    fontSize: 13,
+    color: colors.muted,
+    fontSize: TYPOGRAPHY.xs,
     letterSpacing: 1,
     textAlign: 'center',
     marginTop: 4,
     marginBottom: 22,
   },
   heading: {
-    color: COLORS.brand,
-    fontSize: 28,
-    fontWeight: '800',
+    color: colors.brand,
+    fontSize: TYPOGRAPHY.xxl,
+    fontWeight: TYPOGRAPHY.extrabold,
     marginBottom: 8,
   },
   subtext: {
-    color: COLORS.textTertiary,
-    fontSize: 15,
+    color: colors.muted,
+    fontSize: TYPOGRAPHY.base,
     lineHeight: 22,
     marginBottom: 22,
   },
@@ -165,18 +178,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   fieldLabel: {
-    color: COLORS.brand,
-    fontSize: 14,
-    fontWeight: '700',
+    color: colors.brand,
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.bold,
     marginBottom: 8,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     paddingHorizontal: 14,
     height: 52,
   },
@@ -188,20 +201,20 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 16,
-    color: COLORS.brand,
+    fontSize: TYPOGRAPHY.base,
+    color: colors.brand,
   },
   primaryButton: {
-    backgroundColor: COLORS.brand,
+    backgroundColor: colors.brand,
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
     marginVertical: 8,
   },
   primaryButtonText: {
-    color: COLORS.surface,
-    fontSize: 17,
-    fontWeight: '700',
+    color: colors.surface,
+    fontSize: TYPOGRAPHY.md,
+    fontWeight: TYPOGRAPHY.bold,
   },
   bottomRow: {
     flexDirection: 'row',
@@ -209,17 +222,17 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   bottomText: {
-    color: '#7c846f',
-    fontSize: 14,
+    color: colors.muted,
+    fontSize: TYPOGRAPHY.sm,
   },
   bottomLink: {
-    color: COLORS.accent,
-    fontSize: 14,
-    fontWeight: '700',
+    color: colors.accent,
+    fontSize: TYPOGRAPHY.sm,
+    fontWeight: TYPOGRAPHY.bold,
   },
   footer: {
-    color: '#8c9684',
-    fontSize: 12,
+    color: colors.muted,
+    fontSize: TYPOGRAPHY.xs,
     marginTop: 14,
     textAlign: 'center',
     width: '100%',
