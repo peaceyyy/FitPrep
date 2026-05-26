@@ -45,8 +45,8 @@ const getStyles = (colors) => StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: 10,
-    paddingBottom: Platform.OS === "android" ? 26 : 12,
-    minHeight: Platform.OS === "android" ? 82 : 68,
+    paddingBottom: Platform.OS === "android" ? 44 : 12,
+    minHeight: Platform.OS === "android" ? 100 : 68,
   },
   tab: {
     flex: 1,

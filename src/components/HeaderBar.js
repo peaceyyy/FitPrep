@@ -51,7 +51,8 @@ const getStyles = (colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 18,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
   title: {
     fontSize: TYPOGRAPHY.md,

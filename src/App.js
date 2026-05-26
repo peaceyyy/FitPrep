@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { PanResponder, SafeAreaView, StyleSheet, View } from 'react-native';
+import { Animated, BackHandler, Easing, PanResponder, SafeAreaView, StyleSheet, View } from 'react-native';
 import {
   useFonts,
   PlusJakartaSans_400Regular,
@@ -36,6 +36,7 @@ import { ThemeProvider, ThemeContext } from './context/ThemeContext';
 import { profilesService } from './services/profilesService';
 
 const CUSTOMER_TAB_ORDER = ['home', 'plans', 'orders', 'profile'];
+const ADMIN_TAB_ORDER = ['adminHome', 'adminMeals', 'adminOrders', 'adminUsers'];
 
 function AppContent() {
   const { colors, isDark } = React.useContext(ThemeContext);
@@ -70,6 +71,7 @@ function AppContent() {
   const [reviewedOrderIds, setReviewedOrderIds] = useState([]);
   const [selectedAdminDelivery, setSelectedAdminDelivery] = useState(null);
   const [weeklyPlanDay, setWeeklyPlanDay] = useState('Mon');
+  const tabSwipeOffset = React.useRef(new Animated.Value(0)).current;
 
   const route = history[history.length - 1];
 
@@ -87,6 +89,29 @@ function AppContent() {
   const resetTo = (screen) => {
     setHistory([screen]);
   };
+
+  React.useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (history.length > 1) {
+        navigateBack();
+        return true;
+      }
+
+      if (CUSTOMER_TAB_ORDER.includes(route) && route !== 'home') {
+        resetTo('home');
+        return true;
+      }
+
+      if (ADMIN_TAB_ORDER.includes(route) && route !== 'adminHome') {
+        resetTo('adminHome');
+        return true;
+      }
+
+      return false;
+    });
+
+    return () => subscription.remove();
+  }, [history.length, route]);
 
   React.useEffect(() => {
     if (!supabase) {
@@ -331,41 +356,98 @@ function AppContent() {
   const activeBgColor = isAuthScreen ? COLORS.background : colors.background;
   const activeStatusBarStyle = (isAuthScreen || !isDark) ? "dark" : "light";
   const isCustomerRootTab = CUSTOMER_TAB_ORDER.includes(route);
+  const isAdminRootTab = ADMIN_TAB_ORDER.includes(route);
+  const swipeTabOrder = isCustomerRootTab
+    ? CUSTOMER_TAB_ORDER
+    : isAdminRootTab
+      ? ADMIN_TAB_ORDER
+      : null;
 
   const tabSwipeResponder = React.useMemo(() => (
     PanResponder.create({
       onMoveShouldSetPanResponder: (_event, gestureState) => {
-        if (!isCustomerRootTab) return false;
-        const horizontalIntent = Math.abs(gestureState.dx) > 36
+        if (!swipeTabOrder) return false;
+        const horizontalIntent = Math.abs(gestureState.dx) > 28
           && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.35;
         return horizontalIntent;
       },
+      onPanResponderMove: (_event, gestureState) => {
+        if (!swipeTabOrder) return;
+        const clampedOffset = Math.max(-96, Math.min(96, gestureState.dx));
+        tabSwipeOffset.setValue(clampedOffset);
+      },
       onPanResponderRelease: (_event, gestureState) => {
-        if (!isCustomerRootTab || Math.abs(gestureState.dx) < 72) return;
-        const currentIndex = CUSTOMER_TAB_ORDER.indexOf(route);
+        if (!swipeTabOrder) return;
+        const hasSwipeIntent = Math.abs(gestureState.dx) >= 56 || Math.abs(gestureState.vx) >= 0.35;
+        if (!hasSwipeIntent) {
+          Animated.spring(tabSwipeOffset, {
+            toValue: 0,
+            friction: 7,
+            tension: 80,
+            useNativeDriver: true,
+          }).start();
+          return;
+        }
+
+        const currentIndex = swipeTabOrder.indexOf(route);
         const nextIndex = gestureState.dx < 0
-          ? Math.min(currentIndex + 1, CUSTOMER_TAB_ORDER.length - 1)
+          ? Math.min(currentIndex + 1, swipeTabOrder.length - 1)
           : Math.max(currentIndex - 1, 0);
 
         if (nextIndex !== currentIndex) {
-          resetTo(CUSTOMER_TAB_ORDER[nextIndex]);
+          Animated.timing(tabSwipeOffset, {
+            toValue: gestureState.dx < 0 ? -120 : 120,
+            duration: 120,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }).start(() => {
+            tabSwipeOffset.setValue(0);
+            resetTo(swipeTabOrder[nextIndex]);
+          });
+        } else {
+          Animated.spring(tabSwipeOffset, {
+            toValue: 0,
+            friction: 7,
+            tension: 80,
+            useNativeDriver: true,
+          }).start();
         }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(tabSwipeOffset, {
+          toValue: 0,
+          friction: 7,
+          tension: 80,
+          useNativeDriver: true,
+        }).start();
       },
       onPanResponderTerminationRequest: () => true,
     })
-  ), [isCustomerRootTab, route]);
+  ), [route, swipeTabOrder, tabSwipeOffset]);
+
+  const tabSwipeOpacity = tabSwipeOffset.interpolate({
+    inputRange: [-120, 0, 120],
+    outputRange: [0.9, 1, 0.9],
+    extrapolate: 'clamp',
+  });
 
   return (
     <PlansProvider>
       <SafeAreaView style={[styles.safeArea, { backgroundColor: activeBgColor }]}>
         <StatusBar style={activeStatusBarStyle} />
         <View style={styles.container}>
-          <View
-            style={styles.screenContent}
-            {...(isCustomerRootTab ? tabSwipeResponder.panHandlers : {})}
+          <Animated.View
+            style={[
+              styles.screenContent,
+              swipeTabOrder && {
+                opacity: tabSwipeOpacity,
+                transform: [{ translateX: tabSwipeOffset }],
+              },
+            ]}
+            {...(swipeTabOrder ? tabSwipeResponder.panHandlers : {})}
           >
             {renderScreen()}
-          </View>
+          </Animated.View>
           {['home', 'plans', 'orders', 'profile', 'weeklyPlan'].includes(route) && (
             <BottomNav active={route === 'weeklyPlan' ? 'plans' : route} onChange={resetTo} />
           )}
