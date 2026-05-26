@@ -112,7 +112,7 @@ export default function ReviewScreen({ order, onBack, onSubmit }) {
         <TextInput
           style={styles.commentInput}
           placeholder="The meals were filling and tasty, but could use more variety..."
-          placeholderTextColor={COLORS.textTertiary || COLORS.muted}
+          placeholderTextColor={colors.textTertiary || colors.muted}
           value={comment}
           multiline
           numberOfLines={4}

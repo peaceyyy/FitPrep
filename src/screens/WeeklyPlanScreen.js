@@ -173,9 +173,6 @@ export default function WeeklyPlanScreen({ onBack, onPreorder, initialDay }) {
                   >
                     {description}
                   </AppText>
-                  <View style={styles.nutritionTrack}>
-                    <View style={[styles.nutritionFill, { width: `${Math.min(100, ((meal.protein_g || 0) / 60) * 100)}%` }]} />
-                  </View>
                 </View>
               </Pressable>
             );
@@ -495,17 +492,6 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     color: colors.muted,
     fontWeight: '800',
     marginBottom: 7,
-  },
-  nutritionTrack: {
-    height: 6,
-    backgroundColor: colors.highlightSubtle,
-    borderRadius: 999,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  nutritionFill: {
-    height: '100%',
-    backgroundColor: colors.accent,
   },
   preorderButton: {
     backgroundColor: colors.brand,

@@ -1,6 +1,6 @@
 import AppText from '../components/AppText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
 import { useTheme } from '../context/useTheme';
@@ -169,13 +169,32 @@ export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
         </View>
       </View>
 
-      <TextInput
-        value={searchText}
-        onChangeText={setSearchText}
-        placeholder="Search order, customer, plan..."
-        placeholderTextColor={colors.textTertiary}
-        style={styles.searchInput}
-      />
+      <View style={styles.searchShell}>
+        <Feather name="search" size={16} color={colors.textSecondary} />
+        <TextInput
+          value={searchText}
+          onChangeText={setSearchText}
+          placeholder="Search order, customer, plan..."
+          placeholderTextColor={colors.textTertiary}
+          style={styles.searchInput}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          blurOnSubmit
+          onSubmitEditing={Keyboard.dismiss}
+        />
+        {!!searchText && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+            hitSlop={8}
+            style={({ pressed }) => [styles.clearSearchButton, pressed && { opacity: 0.7 }]}
+            onPress={() => setSearchText('')}
+          >
+            <Feather name="x" size={16} color={colors.textSecondary} />
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 
@@ -188,6 +207,8 @@ export default function AdminOrdersScreen({ onBack, onOpenDeliveryDetails }) {
       renderItem={renderOrderGroup}
       ListHeaderComponent={renderHeader}
       ListFooterComponent={<View style={styles.footerSpacer} />}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       ListEmptyComponent={loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginVertical: 24 }} />
       ) : error ? (
@@ -213,7 +234,9 @@ const getStyles = (colors) => StyleSheet.create({
   pillSummaryRow: { flexDirection: 'row', marginBottom: 14, gap: 8 },
   pillSummary: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1 },
   pillSummaryLabel: { fontSize: 13, fontWeight: '700' },
-  searchInput: { backgroundColor: colors.surface, borderRadius: 16, padding: 14, marginBottom: 18, borderWidth: 1, borderColor: colors.border, color: colors.brand },
+  searchShell: { minHeight: 52, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 16, paddingHorizontal: 14, marginBottom: 18, borderWidth: 1, borderColor: colors.border },
+  searchInput: { flex: 1, minHeight: 52, paddingHorizontal: 10, color: colors.brand, fontSize: 15 },
+  clearSearchButton: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.inputBg },
   emptyState: { backgroundColor: colors.surface, borderRadius: 20, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
   emptyTitle: { color: colors.brand, fontSize: 17, fontWeight: '900', marginBottom: 8 },
   emptyText: { color: colors.textSecondary, fontSize: 15 },

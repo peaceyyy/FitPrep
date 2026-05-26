@@ -50,6 +50,19 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
     return new Date(`${dateStr}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'long' });
   };
 
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return 'Not available';
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return 'Not available';
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
   const renderDelivery = ({ item }) => {
     const statusColor = getStatusColor(item.current_status);
     const isUpdating = updatingId === item.id;
@@ -124,6 +137,7 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
     const userGcash = orderGroup?.user?.gcash_number || 'No GCash provided';
     const plan = orderGroup?.order?.plan_snapshot || orderGroup?.order?.published_weekly_plans || {};
     const orderId = orderGroup?.id || orderGroup?.order?.id || 'Unknown';
+    const orderedAt = orderGroup?.order?.created_at;
     
     return (
       <View style={styles.headerContainer}>
@@ -142,6 +156,7 @@ export default function AdminDeliveryDetailsScreen({ orderGroup, onBack }) {
           <AppText style={styles.summaryContact}>GCash: {userGcash}</AppText>
           <AppText style={styles.summaryPlan}>{plan.name || 'Weekly plan'} • {plan.category || 'Meal plan'}</AppText>
           <AppText style={styles.summaryPlan}>Order #{orderId.slice(0, 8)}</AppText>
+          <AppText style={styles.summaryContact}>Ordered at: {formatDateTime(orderedAt)}</AppText>
         </View>
       </View>
     );

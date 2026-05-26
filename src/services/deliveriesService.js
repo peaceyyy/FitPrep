@@ -29,6 +29,7 @@ export async function fetchMyDailyDeliveries() {
         amount_paid,
         payment_method,
         plan_snapshot,
+        created_at,
         published_weekly_plans (
           id,
           name,
@@ -66,6 +67,7 @@ export async function fetchAllDailyDeliveries() {
         amount_paid,
         payment_method,
         plan_snapshot,
+        created_at,
         published_weekly_plans (
           id,
           name,

@@ -154,7 +154,7 @@ export default function AdminPlanFormScreen({ initialPlan, defaults, onBack }) {
           value={form.week_start_date}
           onChangeText={(value) => updateForm('week_start_date', value)}
           placeholder="YYYY-MM-DD"
-          placeholderTextColor={COLORS.textTertiary}
+          placeholderTextColor={colors.textTertiary}
           style={styles.input}
         />
 
@@ -163,7 +163,7 @@ export default function AdminPlanFormScreen({ initialPlan, defaults, onBack }) {
           value={form.name}
           onChangeText={(value) => updateForm('name', value)}
           placeholder="e.g., Cut - June 1"
-          placeholderTextColor={COLORS.textTertiary}
+          placeholderTextColor={colors.textTertiary}
           style={styles.input}
         />
 
@@ -187,7 +187,7 @@ export default function AdminPlanFormScreen({ initialPlan, defaults, onBack }) {
           value={form.description}
           onChangeText={(value) => updateForm('description', value)}
           placeholder="Short customer-facing plan description"
-          placeholderTextColor={COLORS.textTertiary}
+          placeholderTextColor={colors.textTertiary}
           style={[styles.input, styles.textarea]}
           multiline
         />
@@ -197,7 +197,7 @@ export default function AdminPlanFormScreen({ initialPlan, defaults, onBack }) {
           value={form.weekly_price}
           onChangeText={(value) => updateForm('weekly_price', value)}
           placeholder="149.99"
-          placeholderTextColor={COLORS.textTertiary}
+          placeholderTextColor={colors.textTertiary}
           keyboardType="decimal-pad"
           style={styles.input}
         />
@@ -224,7 +224,7 @@ export default function AdminPlanFormScreen({ initialPlan, defaults, onBack }) {
               </>
             )}
           </View>
-          {mealsLoading && <ActivityIndicator color={COLORS.accent} />}
+          {mealsLoading && <ActivityIndicator color={colors.accent} />}
         </View>
 
         <View style={styles.publishRow}>

@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Animated, BackHandler, Easing, PanResponder, SafeAreaView, StyleSheet, View } from 'react-native';
+import { BackHandler, PanResponder, SafeAreaView, StyleSheet, View } from 'react-native';
 import {
   useFonts,
   PlusJakartaSans_400Regular,
@@ -71,7 +71,6 @@ function AppContent() {
   const [reviewedOrderIds, setReviewedOrderIds] = useState([]);
   const [selectedAdminDelivery, setSelectedAdminDelivery] = useState(null);
   const [weeklyPlanDay, setWeeklyPlanDay] = useState('Mon');
-  const tabSwipeOffset = React.useRef(new Animated.Value(0)).current;
 
   const route = history[history.length - 1];
 
@@ -371,23 +370,10 @@ function AppContent() {
           && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.35;
         return horizontalIntent;
       },
-      onPanResponderMove: (_event, gestureState) => {
-        if (!swipeTabOrder) return;
-        const clampedOffset = Math.max(-96, Math.min(96, gestureState.dx));
-        tabSwipeOffset.setValue(clampedOffset);
-      },
       onPanResponderRelease: (_event, gestureState) => {
         if (!swipeTabOrder) return;
         const hasSwipeIntent = Math.abs(gestureState.dx) >= 56 || Math.abs(gestureState.vx) >= 0.35;
-        if (!hasSwipeIntent) {
-          Animated.spring(tabSwipeOffset, {
-            toValue: 0,
-            friction: 7,
-            tension: 80,
-            useNativeDriver: true,
-          }).start();
-          return;
-        }
+        if (!hasSwipeIntent) return;
 
         const currentIndex = swipeTabOrder.indexOf(route);
         const nextIndex = gestureState.dx < 0
@@ -395,59 +381,24 @@ function AppContent() {
           : Math.max(currentIndex - 1, 0);
 
         if (nextIndex !== currentIndex) {
-          Animated.timing(tabSwipeOffset, {
-            toValue: gestureState.dx < 0 ? -120 : 120,
-            duration: 120,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }).start(() => {
-            tabSwipeOffset.setValue(0);
-            resetTo(swipeTabOrder[nextIndex]);
-          });
-        } else {
-          Animated.spring(tabSwipeOffset, {
-            toValue: 0,
-            friction: 7,
-            tension: 80,
-            useNativeDriver: true,
-          }).start();
+          resetTo(swipeTabOrder[nextIndex]);
         }
-      },
-      onPanResponderTerminate: () => {
-        Animated.spring(tabSwipeOffset, {
-          toValue: 0,
-          friction: 7,
-          tension: 80,
-          useNativeDriver: true,
-        }).start();
       },
       onPanResponderTerminationRequest: () => true,
     })
-  ), [route, swipeTabOrder, tabSwipeOffset]);
-
-  const tabSwipeOpacity = tabSwipeOffset.interpolate({
-    inputRange: [-120, 0, 120],
-    outputRange: [0.9, 1, 0.9],
-    extrapolate: 'clamp',
-  });
+  ), [route, swipeTabOrder]);
 
   return (
     <PlansProvider>
       <SafeAreaView style={[styles.safeArea, { backgroundColor: activeBgColor }]}>
         <StatusBar style={activeStatusBarStyle} />
         <View style={styles.container}>
-          <Animated.View
-            style={[
-              styles.screenContent,
-              swipeTabOrder && {
-                opacity: tabSwipeOpacity,
-                transform: [{ translateX: tabSwipeOffset }],
-              },
-            ]}
+          <View
+            style={styles.screenContent}
             {...(swipeTabOrder ? tabSwipeResponder.panHandlers : {})}
           >
             {renderScreen()}
-          </Animated.View>
+          </View>
           {['home', 'plans', 'orders', 'profile', 'weeklyPlan'].includes(route) && (
             <BottomNav active={route === 'weeklyPlan' ? 'plans' : route} onChange={resetTo} />
           )}
