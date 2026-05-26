@@ -29,6 +29,7 @@ export default function ReviewScreen({ order, onBack, onSubmit }) {
 
   const handleSubmit = () => {
     onSubmit({
+      orderId: order?.id,
       rating,
       comment,
       metrics,

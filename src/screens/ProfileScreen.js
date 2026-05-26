@@ -28,8 +28,8 @@ function formatMacro(value, suffix = 'g') {
 
 export default function ProfileScreen({ user, onLogout, onEditProfile, onBack, onUpdateUser }) {
   const { orders, selectedPlanMeals } = usePlans();
-  const { colors } = useTheme();
-  const styles = useMemo(() => getStyles(colors), [colors]);
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const stats = useMemo(() => {
     const orderCount = Array.isArray(orders) ? orders.length : 0;
@@ -184,6 +184,8 @@ export default function ProfileScreen({ user, onLogout, onEditProfile, onBack, o
         )}
       </View>
 
+      <View style={styles.divider} />
+
       <Pressable style={styles.logoutButton} onPress={onLogout}>
         <AppText style={styles.logoutText}>LOGOUT</AppText>
       </Pressable>
@@ -191,7 +193,7 @@ export default function ProfileScreen({ user, onLogout, onEditProfile, onBack, o
   );
 }
 
-const getStyles = (colors) => StyleSheet.create({
+const getStyles = (colors, isDark) => StyleSheet.create({
   root: {
     backgroundColor: colors.background,
   },
@@ -269,7 +271,7 @@ const getStyles = (colors) => StyleSheet.create({
     paddingHorizontal: 22,
   },
   editButtonText: {
-    color: colors.brand,
+    color: isDark ? colors.textPrimary : colors.brand,
     fontWeight: '800',
   },
   statsGrid: {
@@ -393,6 +395,11 @@ const getStyles = (colors) => StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     marginTop: 12,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 20,
   },
   logoutButton: {
     backgroundColor: colors.dangerSubtle,

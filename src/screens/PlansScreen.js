@@ -1,6 +1,7 @@
 import AppText from '../components/AppText';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
 import { usePlans } from '../context/PlansContext';
 import { useTheme } from '../context/useTheme';
@@ -24,6 +25,7 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
   const {
     browsingWeekStartDate,
     canShowNextWeek,
+    canShowPreviousWeek,
     currentWeekStartDate,
     customerPlans,
     error,
@@ -44,6 +46,9 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
   const subscriptionPlan = subscriptionForWeek?.published_weekly_plans;
   const hasPlansThisWeek = customerPlans.length > 0;
   const canPreorder = preorderEligibility.canPreorder;
+  const planWeekCopy = subscriptionForWeek
+    ? `${subscriptionPlan?.name || 'Your plan'} is already locked for ${weekRangeLabel}.`
+    : 'Browse published weekly menus and preorder before the delivery week starts.';
 
   useEffect(() => {
     if (subscriptionPlan?.category) {
@@ -64,9 +69,7 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
       <View style={styles.hero}>
         <AppText style={styles.greeting}>Your Meal Plans</AppText>
         <AppText style={styles.description}>
-          {subscriptionForWeek
-            ? `You're on ${subscriptionPlan?.name || 'a plan'} this week.`
-            : 'Browse plans below. Preorders open when next week plans are published.'}
+          {planWeekCopy}
         </AppText>
       </View>
 
@@ -74,14 +77,19 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
       <View style={styles.weekNavigator}>
         <Pressable
           accessibilityRole="button"
-          style={styles.weekArrow}
+          disabled={!canShowPreviousWeek}
+          style={[styles.weekArrow, !canShowPreviousWeek && styles.weekArrowDisabled]}
           onPress={showPreviousWeek}
         >
-          <AppText style={styles.weekArrowText}>{'<'}</AppText>
+          <Ionicons
+            name="chevron-back"
+            size={20}
+            color={canShowPreviousWeek ? colors.brand : colors.muted}
+          />
         </Pressable>
 
         <View style={styles.weekRange}>
-          <AppText style={styles.weekKicker}>{isCurrentWeek ? 'Current week plan' : 'Browsing meal week'}</AppText>
+          <AppText style={styles.weekKicker}>{isCurrentWeek ? 'This week' : 'Meal week'}</AppText>
           <AppText style={styles.weekRangeText}>{weekRangeLabel}</AppText>
         </View>
 
@@ -91,7 +99,11 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
           style={[styles.weekArrow, !canShowNextWeek && styles.weekArrowDisabled]}
           onPress={showNextWeek}
         >
-          <AppText style={[styles.weekArrowText, !canShowNextWeek && styles.weekArrowTextDisabled]}>{'>'}</AppText>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={canShowNextWeek ? colors.brand : colors.muted}
+          />
         </Pressable>
       </View>
 
@@ -129,15 +141,19 @@ export default function PlansScreen({ user, onOpenCheckout, onOpenWeeklyPlan, on
 
       {!loading && !hasPlansThisWeek && !error && (
         <View style={styles.emptyState}>
-          <AppText style={styles.emptyTitle}>Hold your gains.</AppText>
-          <AppText style={styles.emptyText}>No menu has been published for this week yet. Sunday is the usual planning checkpoint, but menus appear here as soon as they are published.</AppText>
+          <AppText style={styles.emptyTitle}>No menu published yet</AppText>
+          <AppText style={styles.emptyText}>
+            {weekRangeLabel} is not open for preorder yet. Sunday is the usual planning checkpoint, but menus appear here as soon as admin publishes them.
+          </AppText>
         </View>
       )}
 
       {!loading && hasPlansThisWeek && !selectedPlan && (
         <View style={styles.emptyState}>
-          <AppText style={styles.emptyTitle}>Hold your gains.</AppText>
-          <AppText style={styles.emptyText}>The {CATEGORY_LABELS[selectedCategory]} menu is still being prepared. Check back soon.</AppText>
+          <AppText style={styles.emptyTitle}>{CATEGORY_LABELS[selectedCategory]} not published</AppText>
+          <AppText style={styles.emptyText}>
+            This goal does not have a menu for {weekRangeLabel} yet. Try another goal above or check back once admin finishes this batch.
+          </AppText>
         </View>
       )}
 
@@ -218,14 +234,6 @@ const getStyles = (colors) => StyleSheet.create({
   },
   weekArrowDisabled: {
     opacity: 0.45,
-  },
-  weekArrowText: {
-    color: colors.brand,
-    fontSize: 24,
-    fontWeight: '900',
-  },
-  weekArrowTextDisabled: {
-    color: colors.muted,
   },
   weekRange: {
     flex: 1,

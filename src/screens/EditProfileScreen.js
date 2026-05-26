@@ -21,7 +21,7 @@ export default function EditProfileScreen({ section, user, onSave, onBack }) {
     onSave({
       ...user,
       name,
-      contactNumber,
+      contactNumber: contactNumber.replace(/\s/g, ''),
       address,
     });
   };
@@ -54,8 +54,8 @@ export default function EditProfileScreen({ section, user, onSave, onBack }) {
             <TextInput
               style={styles.input}
               value={contactNumber}
-              onChangeText={setContactNumber}
-              placeholder="09XX XXX XXXX"
+              onChangeText={(text) => setContactNumber(text.replace(/\s/g, ''))}
+              placeholder="09XXXXXXXXX"
               placeholderTextColor={colors.textTertiary}
               keyboardType="phone-pad"
             />

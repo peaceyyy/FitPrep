@@ -22,6 +22,7 @@ export const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const PLAN_CATEGORIES = ['Cutting', 'Bulking', 'Maintenance'];
 export const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner'];
 export const MEAL_TYPE_ORDER = ['Breakfast', 'Lunch', 'Dinner'];
+export const CUSTOMER_MIN_WEEK_START_DATE = '2026-05-18';
 
 export function getMealTypeSortIndex(mealType) {
   const index = MEAL_TYPE_ORDER.indexOf(mealType);

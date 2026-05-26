@@ -14,6 +14,7 @@ import { useTheme } from "../context/useTheme";
 import { usePlans } from "../context/PlansContext";
 import {
   DAY_ORDER,
+  formatWeekRange,
   getDaySortIndex,
   getTodayDayLabel,
   normalizeDayLabel,
@@ -67,6 +68,16 @@ function sumMacros(meals) {
   );
 }
 
+function getOrderPlan(order) {
+  if (!order) return {};
+  return order.plan_snapshot || order.published_weekly_plans || {};
+}
+
+function getOrderWeekStart(order) {
+  if (!order) return "";
+  return getOrderPlan(order).week_start_date || "";
+}
+
 // ─── Macro Ring Component ────────────────────────────────────────────────────
 function MacroRing({ value, max, label, unit, color }) {
   const { colors, isDark } = useTheme();
@@ -113,7 +124,7 @@ function MacroRing({ value, max, label, unit, color }) {
             },
           ]}
         />
-        {/* Fill indicator - shown as border accent on a top segment */}
+
         <Animated.View
           style={[
             styles.macroRingFill,
@@ -126,7 +137,7 @@ function MacroRing({ value, max, label, unit, color }) {
             },
           ]}
         />
-        {/* Center content */}
+
         <View style={styles.macroRingCenter}>
           <AppText style={[styles.macroRingValue, { color: colors.brand }]}>
             {value}
@@ -173,11 +184,18 @@ function StreakBadge({ streak = 0 }) {
 }
 
 // ─── Empty / Unsubscribed State ──────────────────────────────────────────────
-function UnsubscribedHero({ onNavigateToPlans }) {
+function UnsubscribedHero({
+  onNavigateToPlans,
+  onNavigateToOrders,
+  upcomingPreorder,
+}) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideUp = useRef(new Animated.Value(20)).current;
+  const upcomingPlan = getOrderPlan(upcomingPreorder);
+  const upcomingWeekStart = getOrderWeekStart(upcomingPreorder);
+  const hasUpcomingPreorder = Boolean(upcomingPreorder);
 
   useEffect(() => {
     Animated.parallel([
@@ -205,13 +223,20 @@ function UnsubscribedHero({ onNavigateToPlans }) {
       <View style={styles.unsubStripe} />
 
       <View style={styles.unsubBody}>
-        <AppText style={styles.unsubEyebrow}>YOU'RE NOT ON A PLAN YET</AppText>
+        <AppText style={styles.unsubEyebrow}>
+          {hasUpcomingPreorder
+            ? "NEXT PREORDER LOCKED"
+            : "NO ACTIVE PLAN THIS WEEK"}
+        </AppText>
         <AppText style={styles.unsubHeadline}>
-          Your gains{"\n"}are waiting. 💪
+          {hasUpcomingPreorder
+            ? `You're set for\n${formatWeekRange(upcomingWeekStart)}.`
+            : "Choose next\nweek's plan."}
         </AppText>
         <AppText style={styles.unsubSubtitle}>
-          Subscribe to a weekly meal plan and let us fuel every rep, every set,
-          every grind.
+          {hasUpcomingPreorder
+            ? `${upcomingPlan.name || "Your weekly plan"} is confirmed. Daily deliveries will appear in Orders when that meal week starts.`
+            : "Browse the published weekly menu and preorder for the next delivery week."}
         </AppText>
 
         <Pressable
@@ -219,9 +244,11 @@ function UnsubscribedHero({ onNavigateToPlans }) {
             styles.unsubCTA,
             pressed && styles.unsubCTAPressed,
           ]}
-          onPress={onNavigateToPlans}
+          onPress={hasUpcomingPreorder ? onNavigateToOrders : onNavigateToPlans}
         >
-          <AppText style={styles.unsubCTAText}>Browse Plans</AppText>
+          <AppText style={styles.unsubCTAText}>
+            {hasUpcomingPreorder ? "View Orders" : "Browse Plans"}
+          </AppText>
           <Ionicons name="arrow-forward" size={16} color={colors.surface} />
         </Pressable>
 
@@ -230,7 +257,7 @@ function UnsubscribedHero({ onNavigateToPlans }) {
             "Weekly menus",
             "Macro-tracked",
             "Delivered fresh",
-            "Not boring cuisines",
+            "Not boring food",
           ].map((feat) => (
             <View key={feat} style={styles.unsubFeatureChip}>
               <View style={styles.unsubFeatureDot} />
@@ -249,6 +276,7 @@ export default function HomeScreen({
   onOpenWeeklyPlan,
   onBack,
   onNavigateToPlans,
+  onNavigateToOrders,
 }) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
@@ -257,6 +285,8 @@ export default function HomeScreen({
     currentWeekStartDate,
     loading,
     mealsLoading,
+    orders,
+    ordersLoading,
     selectedPlanMeals,
     subscriptionForWeek,
     setSelectedCategory,
@@ -295,6 +325,18 @@ export default function HomeScreen({
 
   const isSubscribed = !!subscriptionForWeek;
   const greeting = getGreeting();
+
+  const upcomingPreorder = useMemo(() => {
+    if (!Array.isArray(orders) || orders.length === 0) return null;
+
+    return (
+      orders
+        .filter((order) => getOrderWeekStart(order) > currentWeekStartDate)
+        .sort((a, b) =>
+          getOrderWeekStart(a).localeCompare(getOrderWeekStart(b)),
+        )[0] || null
+    );
+  }, [currentWeekStartDate, orders]);
 
   // Hero fade-in
   const heroFade = useRef(new Animated.Value(0)).current;
@@ -346,7 +388,11 @@ export default function HomeScreen({
 
       {/* ── Unsubscribed State ── */}
       {!loading && !isSubscribed && (
-        <UnsubscribedHero onNavigateToPlans={onNavigateToPlans} />
+        <UnsubscribedHero
+          onNavigateToPlans={onNavigateToPlans}
+          onNavigateToOrders={onNavigateToOrders || onNavigateToPlans}
+          upcomingPreorder={ordersLoading ? null : upcomingPreorder}
+        />
       )}
 
       {/* ── Subscribed Content ── */}

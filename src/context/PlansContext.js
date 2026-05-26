@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react';
 import {
+  CUSTOMER_MIN_WEEK_START_DATE,
   createPlan,
   deletePlan,
   fetchMealsForPlan,
@@ -59,15 +60,19 @@ function plansReducer(state, action) {
         ordersError: action.message || '',
         orders: [],
       };
-    case 'SET_BROWSING_WEEK':
-      if (state.browsingWeekStartDate === action.weekStartDate) return state;
+    case 'SET_BROWSING_WEEK': {
+      const targetWeekStartDate = action.weekStartDate < CUSTOMER_MIN_WEEK_START_DATE
+        ? CUSTOMER_MIN_WEEK_START_DATE
+        : action.weekStartDate;
+      if (state.browsingWeekStartDate === targetWeekStartDate) return state;
       return {
         ...state,
-        browsingWeekStartDate: action.weekStartDate,
+        browsingWeekStartDate: targetWeekStartDate,
         meals: [],
         selectedPlan: null,
         mealsLoading: false,
       };
+    }
     case 'SET_SELECTED_CATEGORY': {
       const newCategory = normalizeCategory(action.category);
       if (state.selectedCategory === newCategory) return state;
@@ -217,8 +222,11 @@ export function PlansProvider({ children }) {
   }, []);
 
   const showPreviousWeek = useCallback(() => {
+    if (state.browsingWeekStartDate <= CUSTOMER_MIN_WEEK_START_DATE) return;
     dispatch({ type: 'SET_BROWSING_WEEK', weekStartDate: getPreviousWeekStartDate(state.browsingWeekStartDate) });
   }, [state.browsingWeekStartDate]);
+
+  const canShowPreviousWeek = state.browsingWeekStartDate > CUSTOMER_MIN_WEEK_START_DATE;
 
   const showNextWeek = useCallback(() => {
     const nextWeekStartDate = getNextWeekStartDate(state.browsingWeekStartDate);
@@ -284,6 +292,7 @@ export function PlansProvider({ children }) {
 
   const value = useMemo(() => ({
     ...state,
+    canShowPreviousWeek,
     canShowNextWeek,
     currentWeekStartDate,
     customerPlans,
@@ -304,6 +313,7 @@ export function PlansProvider({ children }) {
     weekRangeLabel: formatWeekRange(state.browsingWeekStartDate),
   }), [
     state,
+    canShowPreviousWeek,
     canShowNextWeek,
     customerPlans,
     loadMealsForPlan,

@@ -64,6 +64,7 @@ function AppContent() {
   const [editSection, setEditSection] = useState('Personal Information');
   const [selectedAdminUserId, setSelectedAdminUserId] = useState(null);
   const [reviewOrder, setReviewOrder] = useState(null);
+  const [reviewedOrderIds, setReviewedOrderIds] = useState([]);
   const [selectedAdminDelivery, setSelectedAdminDelivery] = useState(null);
 
   const route = history[history.length - 1];
@@ -229,11 +230,11 @@ function AppContent() {
       case 'register':
         return <RegisterScreen onBack={navigateBack} />;
       case 'home':
-        return <HomeScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onNavigateToPlans={() => resetTo('plans')} onBack={history.length > 1 ? navigateBack : null} />;
+        return <HomeScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onNavigateToPlans={() => resetTo('plans')} onNavigateToOrders={() => resetTo('orders')} onBack={history.length > 1 ? navigateBack : null} />;
       case 'plans':
         return <PlansScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} onBack={history.length > 1 ? navigateBack : null} />;
       case 'orders':
-        return <OrdersScreen user={user} onOpenCheckout={handleOpenCheckout} onOpenReview={(order) => { setReviewOrder(order); navigateTo('review'); }} onBack={history.length > 1 ? navigateBack : null} />;
+        return <OrdersScreen user={user} reviewedOrderIds={reviewedOrderIds} onOpenCheckout={handleOpenCheckout} onOpenReview={(order) => { setReviewOrder(order); navigateTo('review'); }} onBack={history.length > 1 ? navigateBack : null} />;
       case 'profile':
         return <ProfileScreen 
           user={user} 
@@ -271,7 +272,20 @@ function AppContent() {
       case 'checkout':
         return <CheckoutScreen plan={selectedPlan} user={user} onBack={navigateBack} onConfirm={() => resetTo('orders')} />;
       case 'review':
-        return <ReviewScreen order={reviewOrder} onBack={navigateBack} onSubmit={navigateBack} />;
+        return (
+          <ReviewScreen
+            order={reviewOrder}
+            onBack={navigateBack}
+            onSubmit={(review) => {
+              if (review?.orderId) {
+                setReviewedOrderIds((prev) => (
+                  prev.includes(review.orderId) ? prev : [...prev, review.orderId]
+                ));
+              }
+              navigateBack();
+            }}
+          />
+        );
       case 'weeklyPlan':
         return <WeeklyPlanScreen onBack={navigateBack} onPreorder={handleOpenCheckout} />;
       case 'adminHome':
@@ -304,14 +318,18 @@ function AppContent() {
       case 'adminUserDetails':
         return <AdminUserDetailsScreen profileId={selectedAdminUserId} onBack={navigateBack} />;
       default:
-        return <HomeScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} />;
+        return <HomeScreen user={user} onOpenWeeklyPlan={() => navigateTo('weeklyPlan')} onOpenCheckout={handleOpenCheckout} onNavigateToPlans={() => resetTo('plans')} onNavigateToOrders={() => resetTo('orders')} />;
     }
   };
 
+  const isAuthScreen = route === 'login' || route === 'register';
+  const activeBgColor = isAuthScreen ? COLORS.background : colors.background;
+  const activeStatusBarStyle = (isAuthScreen || !isDark) ? "dark" : "light";
+
   return (
     <PlansProvider>
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-        <StatusBar style={isDark ? "light" : "dark"} />
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: activeBgColor }]}>
+        <StatusBar style={activeStatusBarStyle} />
         <View style={styles.container}>
           <View style={styles.screenContent}>{renderScreen()}</View>
           {['home', 'plans', 'orders', 'profile', 'weeklyPlan'].includes(route) && (

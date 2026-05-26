@@ -1,6 +1,7 @@
 import AppText from '../components/AppText';
 import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 import { usePlans } from '../context/PlansContext';
@@ -30,7 +31,6 @@ export default function WeeklyPlanScreen({ onBack, onPreorder }) {
     weekRangeLabel,
   } = usePlans();
   const [selectedDay, setSelectedDay] = useState('Mon');
-  const [expandedMealId, setExpandedMealId] = useState(null);
 
   const dayMeals = useMemo(() => (
     selectedPlanMeals.filter((meal) => normalizeDayLabel(meal.day_of_week) === selectedDay)
@@ -57,14 +57,16 @@ export default function WeeklyPlanScreen({ onBack, onPreorder }) {
       />
 
       <View style={styles.weekHeader}>
-        <AppText style={styles.weekKicker}>{isCurrentWeek ? 'Current week plan' : 'Browsing meal week'}</AppText>
+        <AppText style={styles.weekKicker}>{isCurrentWeek ? 'This week' : 'Meal week'}</AppText>
         <AppText style={styles.weekTitle}>{weekRangeLabel}</AppText>
       </View>
 
       {subscriptionForWeek && (
         <View style={styles.subscriptionNotice}>
-          <AppText style={styles.subscriptionTitle}>Subscribed</AppText>
-          <AppText style={styles.subscriptionText}>{subscriptionPlanName || 'Your plan'} is already locked in for this week.</AppText>
+          <AppText style={styles.subscriptionTitle}>Preorder confirmed</AppText>
+          <AppText style={styles.subscriptionText}>
+            {subscriptionPlanName || 'Your plan'} is already locked for {weekRangeLabel}.
+          </AppText>
         </View>
       )}
 
@@ -88,8 +90,10 @@ export default function WeeklyPlanScreen({ onBack, onPreorder }) {
 
       {!selectedPlan && (
         <View style={styles.emptyState}>
-          <AppText style={styles.emptyTitle}>Hold your gains.</AppText>
-          <AppText style={styles.emptyStateText}>The {CATEGORY_LABELS[selectedCategory]} menu is still being prepared for this week.</AppText>
+          <AppText style={styles.emptyTitle}>{CATEGORY_LABELS[selectedCategory]} not published</AppText>
+          <AppText style={styles.emptyStateText}>
+            This goal does not have a menu for {weekRangeLabel} yet. Switch goals or check back once this batch is complete.
+          </AppText>
         </View>
       )}
 
@@ -120,50 +124,48 @@ export default function WeeklyPlanScreen({ onBack, onPreorder }) {
 
           {!mealsLoading && dayMeals.length === 0 && (
             <View style={styles.emptyState}>
-              <AppText style={styles.emptyStateText}>No meals scheduled for {selectedDay} yet.</AppText>
+              <AppText style={styles.emptyStateText}>
+                No {selectedDay} meals are scheduled for this plan yet.
+              </AppText>
             </View>
           )}
 
-          {!mealsLoading && sortedDayMeals.length > 0 && (
-            <AppText style={styles.detailHint}>Long press a meal to show details.</AppText>
-          )}
-
           {sortedDayMeals.map((meal) => (
-            <Pressable
+            <View
               key={meal.id}
-              accessibilityRole="button"
-              accessibilityHint="Long press to show or hide meal details"
-              delayLongPress={220}
-              style={({ pressed }) => [styles.mealCard, pressed && styles.mealCardPressed]}
-              onLongPress={() => setExpandedMealId((current) => (current === meal.id ? null : meal.id))}
+              style={styles.mealCard}
             >
-              <View style={styles.mealHeader}>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
-                  <View style={styles.mealDayBadge}>
-                    <AppText style={styles.mealDayText}>{selectedDay}</AppText>
+              <View style={styles.mealImagePlaceholder}>
+                <Ionicons name="image-outline" size={24} color={COLORS.accent} />
+              </View>
+
+              <View style={styles.mealContent}>
+                <View style={styles.mealHeader}>
+                  <View style={styles.mealBadgeRow}>
+                    <View style={styles.mealDayBadge}>
+                      <AppText style={styles.mealDayText}>{selectedDay}</AppText>
+                    </View>
+                    <View style={[styles.mealDayBadge, styles.mealTypeBadge]}>
+                      <AppText style={[styles.mealDayText, { color: COLORS.brand }]}>
+                        {meal.meal_type || 'Lunch'}
+                      </AppText>
+                    </View>
                   </View>
-                  <View style={[styles.mealDayBadge, { backgroundColor: COLORS.highlight }]}>
-                    <AppText style={[styles.mealDayText, { color: COLORS.brand }]}>
-                      {meal.meal_type || 'Lunch'}
-                    </AppText>
+                  <View style={styles.mealRightMeta}>
+                    <AppText style={styles.mealCalories}>{meal.calories || 0} kcal</AppText>
                   </View>
                 </View>
-                <View style={styles.mealRightMeta}>
-                  <AppText style={styles.mealCalories}>{meal.calories || 0} kcal</AppText>
-                  <AppText style={styles.mealExpandText}>{expandedMealId === meal.id ? 'Hide' : 'Hold'}</AppText>
+
+                <AppText style={styles.mealTitle}>{meal.meal_name}</AppText>
+                <AppText style={styles.nutritionText}>{formatMacros(meal)}</AppText>
+                <AppText style={styles.mealDescription}>
+                  {meal.description || 'Details for this meal are being finalized.'}
+                </AppText>
+                <View style={styles.nutritionTrack}>
+                  <View style={[styles.nutritionFill, { width: `${Math.min(100, ((meal.protein_g || 0) / 60) * 100)}%` }]} />
                 </View>
               </View>
-              <AppText style={styles.mealTitle}>{meal.meal_name}</AppText>
-              <AppText style={styles.nutritionText}>{formatMacros(meal)}</AppText>
-              {expandedMealId === meal.id && (
-                <>
-                  {!!meal.description && <AppText style={styles.mealDescription}>{meal.description}</AppText>}
-                  <View style={styles.nutritionTrack}>
-                    <View style={[styles.nutritionFill, { width: `${Math.min(100, ((meal.protein_g || 0) / 60) * 100)}%` }]} />
-                  </View>
-                </>
-              )}
-            </Pressable>
+            </View>
           ))}
 
           <Pressable
@@ -330,75 +332,85 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   mealCard: {
+    flexDirection: 'row',
     backgroundColor: COLORS.surface,
-    borderRadius: 22,
+    borderRadius: 20,
     marginBottom: 14,
-    padding: 18,
+    padding: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  mealCardPressed: {
-    opacity: 0.8,
+  mealImagePlaceholder: {
+    width: 74,
+    minHeight: 98,
+    borderRadius: 16,
+    backgroundColor: '#edf7d7',
+    borderWidth: 1,
+    borderColor: '#d9ebaf',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
-  detailHint: {
-    color: COLORS.muted,
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: -6,
-    marginBottom: 10,
+  mealContent: {
+    flex: 1,
+    minWidth: 0,
   },
   mealHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  mealBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    flex: 1,
+    paddingRight: 8,
   },
   mealDayBadge: {
     backgroundColor: '#edf7d7',
     borderRadius: 999,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
+    paddingVertical: 5,
+    paddingHorizontal: 9,
+  },
+  mealTypeBadge: {
+    backgroundColor: COLORS.highlight,
   },
   mealDayText: {
     color: COLORS.brand,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '900',
   },
   mealCalories: {
     color: COLORS.accent,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
   },
   mealRightMeta: {
     alignItems: 'flex-end',
   },
-  mealExpandText: {
-    color: COLORS.muted,
-    fontSize: 10,
-    fontWeight: '900',
-    marginTop: 3,
-    textTransform: 'uppercase',
-  },
   mealTitle: {
-    fontSize: 19,
+    fontSize: 16,
     fontWeight: '900',
     color: COLORS.brand,
-    marginBottom: 8,
+    lineHeight: 21,
+    marginBottom: 6,
   },
   mealDescription: {
     color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginTop: 2,
-    marginBottom: 12,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 10,
   },
   nutritionText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.muted,
     fontWeight: '800',
-    marginBottom: 12,
+    marginBottom: 7,
   },
   nutritionTrack: {
-    height: 8,
+    height: 6,
     backgroundColor: '#e8f2d6',
     borderRadius: 999,
     overflow: 'hidden',

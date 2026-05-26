@@ -8,15 +8,15 @@ import { DELIVERY_STATUSES } from '../services/deliveryStatusService';
 import { fetchMyDailyDeliveries } from '../services/deliveriesService';
 import { formatWeekRange, getWeekEndDate } from '../services/plansService';
 
-const isPastSunday = (weekStartDate) => {
-  if (!weekStartDate) return false;
-  const endDate = new Date(`${getWeekEndDate(weekStartDate)}T23:59:59`);
-  return new Date() > endDate;
-};
+const getOrderPlan = (order) => (order ? (order.plan_snapshot || order.published_weekly_plans || {}) : {});
 
-const getOrderPlan = (order = {}) => order.plan_snapshot || order.published_weekly_plans || {};
+const getOrderWeekStart = (order) => getOrderPlan(order).week_start_date || '';
 
-const getOrderWeekStart = (order = {}) => getOrderPlan(order).week_start_date || '';
+const canReviewOrderGroup = (group = {}) => (
+  Array.isArray(group.deliveries)
+  && group.deliveries.length > 0
+  && group.deliveries.every((delivery) => delivery.current_status === DELIVERY_STATUSES.DELIVERED)
+);
 
 const isCurrentOrFutureOrder = (order) => {
   const weekStartDate = getOrderWeekStart(order);
@@ -25,7 +25,7 @@ const isCurrentOrFutureOrder = (order) => {
   return weekEnd >= new Date();
 };
 
-export default function OrdersScreen({ onOpenReview, onBack }) {
+export default function OrdersScreen({ onOpenReview, onBack, reviewedOrderIds = [] }) {
   const { colors, isDark } = useTheme();
   const styles = React.useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const { orders, ordersLoading, loadOrders } = usePlans();
@@ -181,43 +181,51 @@ export default function OrdersScreen({ onOpenReview, onBack }) {
           </View>
 
           <AppText style={styles.sectionTitle}>Delivery Progress</AppText>
-          {orderGroups.map((group) => (
-            <View key={group.id} style={styles.orderCard}>
-              <View style={styles.orderHeader}>
-                <View style={styles.orderBody}>
-                  <AppText style={styles.orderTitle} numberOfLines={2}>{group.plan.name || 'Plan'}</AppText>
-                  <AppText style={styles.orderDate}>{group.plan.category || 'Meal plan'} - Order #{group.id?.slice(0, 8)}</AppText>
-                </View>
-                <AppText style={styles.orderPrice}>{formatPrice(group.order.amount_paid ?? group.plan.weekly_price)}</AppText>
-              </View>
+          {orderGroups.map((group) => {
+            const hasReviewed = reviewedOrderIds.includes(group.id);
 
-              <View style={styles.paymentRow}>
-                <View style={styles.paymentPill}>
-                  <AppText style={styles.paymentText}>{group.order.payment_method || 'GCash'}</AppText>
+            return (
+              <View key={group.id} style={styles.orderCard}>
+                <View style={styles.orderHeader}>
+                  <View style={styles.orderBody}>
+                    <AppText style={styles.orderTitle} numberOfLines={2}>{group.plan.name || 'Plan'}</AppText>
+                    <AppText style={styles.orderDate}>{group.plan.category || 'Meal plan'} - Order #{group.id?.slice(0, 8)}</AppText>
+                  </View>
+                  <AppText style={styles.orderPrice}>{formatPrice(group.order.amount_paid ?? group.plan.weekly_price)}</AppText>
                 </View>
-                <View style={styles.paymentPill}>
-                  <AppText style={styles.paymentText}>{group.deliveries[0]?.delivery_time || '--:--'}</AppText>
-                </View>
-              </View>
 
-              <View style={styles.deliveryList}>
-                {group.deliveries.map(renderDelivery)}
-              </View>
-
-              {isPastSunday(group.plan.week_start_date) ? (
-                <Pressable
-                  style={({ pressed }) => [styles.reviewButton, pressed && { opacity: 0.75 }]}
-                  onPress={() => onOpenReview({ ...group.order, id: group.id, published_weekly_plans: group.plan })}
-                >
-                  <AppText style={styles.reviewButtonText}>Review</AppText>
-                </Pressable>
-              ) : (
-                <View style={[styles.reviewButton, styles.reviewButtonDisabled]}>
-                  <AppText style={[styles.reviewButtonText, { color: colors.muted }]}>Review later</AppText>
+                <View style={styles.paymentRow}>
+                  <View style={styles.paymentPill}>
+                    <AppText style={styles.paymentText}>{group.order.payment_method || 'GCash'}</AppText>
+                  </View>
+                  <View style={styles.paymentPill}>
+                    <AppText style={styles.paymentText}>{group.deliveries[0]?.delivery_time || '--:--'}</AppText>
+                  </View>
                 </View>
-              )}
-            </View>
-          ))}
+
+                <View style={styles.deliveryList}>
+                  {group.deliveries.map(renderDelivery)}
+                </View>
+
+                {hasReviewed ? (
+                  <View style={[styles.reviewButton, styles.reviewButtonReviewed]}>
+                    <AppText style={styles.reviewButtonText}>Reviewed</AppText>
+                  </View>
+                ) : canReviewOrderGroup(group) ? (
+                  <Pressable
+                    style={({ pressed }) => [styles.reviewButton, pressed && { opacity: 0.75 }]}
+                    onPress={() => onOpenReview({ ...group.order, id: group.id, published_weekly_plans: group.plan })}
+                  >
+                    <AppText style={styles.reviewButtonText}>Review</AppText>
+                  </Pressable>
+                ) : (
+                  <View style={[styles.reviewButton, styles.reviewButtonDisabled]}>
+                    <AppText style={[styles.reviewButtonText, { color: colors.muted }]}>Review later</AppText>
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </>
       )}
 
@@ -351,8 +359,13 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   reviewButtonDisabled: {
     backgroundColor: colors.surfaceGreen,
   },
+  reviewButtonReviewed: {
+    backgroundColor: colors.highlightSubtle,
+    borderWidth: 1,
+    borderColor: colors.highlight,
+  },
   reviewButtonText: {
-    color: colors.brand,
+    color: isDark ? colors.textPrimary : colors.brand,
     fontWeight: '800',
   },
   ctaCard: {

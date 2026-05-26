@@ -24,16 +24,24 @@ export const profilesService = {
     }
   },
 
-  // Update current user's profile using the RPC
+  // Update current user's profile directly
   async updateCurrentProfile(updates) {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { success: false, error: 'Not authenticated' };
+
       const { full_name, goal, address, gcash_number } = updates;
-      const { data, error } = await supabase.rpc('update_own_profile', {
-        new_full_name: full_name,
-        new_goal: goal,
-        new_address: address || null,
-        new_gcash_number: gcash_number || null,
-      });
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          full_name,
+          goal,
+          address: address || null,
+          gcash_number: gcash_number || null,
+        })
+        .eq('id', user.id)
+        .select();
 
       if (error) {
         console.error('Error updating profile:', error);

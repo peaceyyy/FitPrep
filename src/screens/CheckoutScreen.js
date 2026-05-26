@@ -1,6 +1,6 @@
 import AppText from '../components/AppText';
 import React, { useState, useMemo } from 'react';
-import { ScrollView, StyleSheet, View, Pressable, Alert, ActivityIndicator, Text } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable, Alert, ActivityIndicator } from 'react-native';
 import HeaderBar from '../components/HeaderBar';
 import { COLORS } from '../theme';
 import { MOCK_PAYMENT_METHOD, normalizeDeliveryTime, placeOrder } from '../services/ordersService';
@@ -18,6 +18,7 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
   const [selectedTime, setSelectedTime] = useState('6:00 AM');
   const [loading, setLoading] = useState(false);
   const [paymentMarked, setPaymentMarked] = useState(false);
+  const [showFullSchedule, setShowFullSchedule] = useState(false);
   
   const {
     browsingWeekStartDate,
@@ -57,6 +58,10 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
 
     return grouped;
   }, [selectedPlanMeals]);
+
+  const scheduleDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const visibleScheduleDays = showFullSchedule ? scheduleDays : scheduleDays.slice(0, 2);
+  const remainingScheduleDays = Math.max(scheduleDays.length - visibleScheduleDays.length, 0);
 
   const handleConfirm = async () => {
     if (!preorderEligibility.canPreorder) {
@@ -106,10 +111,28 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
         </View>
         <AppText style={styles.summaryTitle}>{plan?.name || 'Selected Plan'}</AppText>
         
-        {/* Full Mon-Sun B/L/D Schedule */}
         <View style={styles.scheduleContainer}>
-          <AppText style={styles.scheduleTitle}>Weekly Meal Schedule</AppText>
-          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+          <View style={styles.scheduleHeader}>
+            <View>
+              <AppText style={styles.scheduleTitle}>Meal Schedule</AppText>
+              <AppText style={styles.scheduleSubtitle}>
+                {showFullSchedule ? 'Full week shown' : 'Previewing the first two delivery days'}
+              </AppText>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.scheduleToggle, pressed && { opacity: 0.75 }]}
+              onPress={() => setShowFullSchedule((current) => !current)}
+            >
+              <Ionicons
+                name={showFullSchedule ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color={COLORS.brand}
+              />
+            </Pressable>
+          </View>
+
+          {visibleScheduleDays.map((day) => {
             const dayMeals = mealsByDay[day] || { Breakfast: null, Lunch: null, Dinner: null };
             return (
               <View key={day} style={styles.dayCard}>
@@ -142,6 +165,17 @@ export default function CheckoutScreen({ plan, user, onBack, onConfirm }) {
               </View>
             );
           })}
+          {!showFullSchedule && remainingScheduleDays > 0 && (
+            <Pressable
+              accessibilityRole="button"
+              style={({ pressed }) => [styles.scheduleMoreButton, pressed && { opacity: 0.75 }]}
+              onPress={() => setShowFullSchedule(true)}
+            >
+              <AppText style={styles.scheduleMoreText}>
+                Show {remainingScheduleDays} more days
+              </AppText>
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.planNote}>
@@ -322,13 +356,35 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 14,
   },
+  scheduleHeader: {
+    minHeight: 44,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   scheduleTitle: {
     fontSize: 14,
     fontWeight: '800',
     color: COLORS.brand,
-    marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  scheduleSubtitle: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+  scheduleToggle: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.highlightSubtle,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   dayCard: {
     backgroundColor: '#f9fbf7',
@@ -376,6 +432,20 @@ const styles = StyleSheet.create({
     color: COLORS.brand,
     fontWeight: '500',
     flex: 1,
+  },
+  scheduleMoreButton: {
+    minHeight: 44,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.highlightSubtle,
+  },
+  scheduleMoreText: {
+    color: COLORS.brand,
+    fontSize: 13,
+    fontWeight: '800',
   },
   sectionTitle: {
     fontSize: 18,
