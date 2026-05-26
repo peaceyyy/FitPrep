@@ -118,9 +118,12 @@ export default function LoginScreen({ onNavigateRegister }) {
 
 const getStyles = (colors) => StyleSheet.create({
   content: {
+    flexGrow: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 16,
-    paddingBottom: 30,
+    paddingTop: 28,
+    paddingBottom: 40,
   },
   errorText: {
     color: colors.danger,

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { Platform, View, Text, Pressable, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTheme } from "../context/useTheme";
 
@@ -44,11 +44,15 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === "android" ? 26 : 12,
+    minHeight: Platform.OS === "android" ? 82 : 68,
   },
   tab: {
+    flex: 1,
     alignItems: "center",
-    width: 96,
+    justifyContent: "center",
+    minHeight: 48,
   },
   icon: {
     fontSize: 18,

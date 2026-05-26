@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import { PanResponder, SafeAreaView, StyleSheet, View } from 'react-native';
 import {
   useFonts,
   PlusJakartaSans_400Regular,
@@ -34,6 +34,8 @@ import { supabase } from './lib/supabaseClient';
 import { PlansProvider } from './context/PlansContext';
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
 import { profilesService } from './services/profilesService';
+
+const CUSTOMER_TAB_ORDER = ['home', 'plans', 'orders', 'profile'];
 
 function AppContent() {
   const { colors, isDark } = React.useContext(ThemeContext);
@@ -328,13 +330,42 @@ function AppContent() {
   const isAuthScreen = route === 'login' || route === 'register';
   const activeBgColor = isAuthScreen ? COLORS.background : colors.background;
   const activeStatusBarStyle = (isAuthScreen || !isDark) ? "dark" : "light";
+  const isCustomerRootTab = CUSTOMER_TAB_ORDER.includes(route);
+
+  const tabSwipeResponder = React.useMemo(() => (
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_event, gestureState) => {
+        if (!isCustomerRootTab) return false;
+        const horizontalIntent = Math.abs(gestureState.dx) > 36
+          && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.35;
+        return horizontalIntent;
+      },
+      onPanResponderRelease: (_event, gestureState) => {
+        if (!isCustomerRootTab || Math.abs(gestureState.dx) < 72) return;
+        const currentIndex = CUSTOMER_TAB_ORDER.indexOf(route);
+        const nextIndex = gestureState.dx < 0
+          ? Math.min(currentIndex + 1, CUSTOMER_TAB_ORDER.length - 1)
+          : Math.max(currentIndex - 1, 0);
+
+        if (nextIndex !== currentIndex) {
+          resetTo(CUSTOMER_TAB_ORDER[nextIndex]);
+        }
+      },
+      onPanResponderTerminationRequest: () => true,
+    })
+  ), [isCustomerRootTab, route]);
 
   return (
     <PlansProvider>
       <SafeAreaView style={[styles.safeArea, { backgroundColor: activeBgColor }]}>
         <StatusBar style={activeStatusBarStyle} />
         <View style={styles.container}>
-          <View style={styles.screenContent}>{renderScreen()}</View>
+          <View
+            style={styles.screenContent}
+            {...(isCustomerRootTab ? tabSwipeResponder.panHandlers : {})}
+          >
+            {renderScreen()}
+          </View>
           {['home', 'plans', 'orders', 'profile', 'weeklyPlan'].includes(route) && (
             <BottomNav active={route === 'weeklyPlan' ? 'plans' : route} onChange={resetTo} />
           )}
