@@ -1,6 +1,6 @@
 # FitPrep
 
-FitPrep is a React Native mobile app prototype for **PrepMate**, a weekly fitness meal-prep preorder system built for a mobile development class.
+FitPrep is a React Native mobile app prototype for **PrepMate**, a weekly fitness meal-prep preorder system built for CS Year 2 our mobile development class.
 
 The app models a small meal-prep business workflow: admins publish weekly meal plans, customers browse and preorder a plan for an upcoming week, checkout records a mock-paid GCash order, and both sides can view daily delivery progress for the ordered week.
 
@@ -13,8 +13,6 @@ The app is meant for:
 - Fitness-oriented customers who want predictable weekly meals with visible calories and macros.
 - Busy students, professionals, gym-goers, and health-conscious users who want less daily food decision-making.
 - Meal-prep businesses that need a simple way to publish weekly plans, collect preorders, and track fulfillment.
-
-For the class deliverable, the goal is a stable, demoable MVP that proves the main customer/admin workflow without overbuilding payment, logistics, or subscription infrastructure.
 
 ## Current MVP
 
@@ -37,15 +35,15 @@ The prototype supports:
 
 ## Tech Stack
 
-| Layer | Technology |
-| --- | --- |
-| Mobile app | React Native with Expo |
-| UI runtime | React 19, React Native 0.85 |
-| Backend | Supabase PostgreSQL |
-| Auth | Supabase Auth |
-| State | React Context and local component state |
-| Styling | React Native StyleSheet, shared theme module |
-| Fonts | Plus Jakarta Sans via Expo Google Fonts |
+| Layer      | Technology                                   |
+| ---------- | -------------------------------------------- |
+| Mobile app | React Native with Expo                       |
+| UI runtime | React 19, React Native 0.85                  |
+| Backend    | Supabase PostgreSQL                          |
+| Auth       | Supabase Auth                                |
+| State      | React Context and local component state      |
+| Styling    | React Native StyleSheet, shared theme module |
+| Fonts      | Plus Jakarta Sans via Expo Google Fonts      |
 
 ## Project Structure
 
@@ -68,12 +66,14 @@ FitPrep/
     services/
 ```
 
-Important folders:
+Important files and folders:
 
+- `seed_plans.sql` contains sample weekly plan and meal data for demos.
 - `src/screens` contains the customer and admin app screens.
 - `src/services` contains Supabase-facing data operations.
 - `src/context` contains shared app state, including plan loading.
 - `src/components` contains shared UI elements and navigation bars.
+- `src/lib` contains utility functions and Supabase client setup.
 - `src/mock` contains fallback data for local/demo use.
 - `assets` contains app icons and brand imagery.
 
@@ -92,13 +92,13 @@ When those variables are missing, the app logs a warning and uses mock/demo fall
 
 The app expects these main tables:
 
-| Table | Purpose |
-| --- | --- |
-| `profiles` | App-facing profile mirror for Supabase Auth users. |
-| `published_weekly_plans` | Weekly plan offerings for a Monday-Sunday week. |
-| `weekly_plan_meals` | Meals attached to each weekly plan. |
-| `weekly_orders` | Customer preorders with mock payment and plan snapshot data. |
-| `daily_deliveries` | One delivery row per ordered day, used for admin and customer tracking. |
+| Table                    | Purpose                                                                 |
+| ------------------------ | ----------------------------------------------------------------------- |
+| `profiles`               | App-facing profile mirror for Supabase Auth users.                      |
+| `published_weekly_plans` | Weekly plan offerings for a Monday-Sunday week.                         |
+| `weekly_plan_meals`      | Meals attached to each weekly plan.                                     |
+| `weekly_orders`          | Customer preorders with mock payment and plan snapshot data.            |
+| `daily_deliveries`       | One delivery row per ordered day, used for admin and customer tracking. |
 
 Supabase Auth remains the identity source. Order and delivery rows reference `auth.users.id`.
 
@@ -150,7 +150,6 @@ The included `seed_plans.sql` file provides sample weekly plan and meal data for
 7. Admin opens delivery tracking and updates a delivery status.
 8. Customer opens delivery tracking and sees their own delivery progress.
 
-
 ## Scope Boundaries
 
 These are intentionally out of scope for the MVP:
@@ -166,18 +165,16 @@ These are intentionally out of scope for the MVP:
 - Full order status audit history.
 - Persisted production reviews.
 
-
 ## Key Source Files
 
-| File | Role |
-| --- | --- |
-| `src/App.js` | Top-level navigation, auth session handling, and screen routing. |
-| `src/lib/supabaseClient.js` | Supabase client setup and mock fallback detection. |
-| `src/context/PlansContext.js` | Shared weekly plan state. |
-| `src/services/plansService.js` | Plan queries and admin plan CRUD. |
-| `src/services/mealsService.js` | Meal create, update, and delete operations. |
-| `src/services/ordersService.js` | Checkout, weekly order creation, snapshots, and delivery generation. |
-| `src/services/deliveriesService.js` | Admin/customer daily delivery queries and status updates. |
-| `src/services/profilesService.js` | Customer profile and admin profile access. |
-| `src/services/deliveryStatusService.js` | Demo delivery status projection. |
-
+| File                                    | Role                                                                 |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| `src/App.js`                            | Top-level navigation, auth session handling, and screen routing.     |
+| `src/lib/supabaseClient.js`             | Supabase client setup and mock fallback detection.                   |
+| `src/context/PlansContext.js`           | Shared weekly plan state.                                            |
+| `src/services/plansService.js`          | Plan queries and admin plan CRUD.                                    |
+| `src/services/mealsService.js`          | Meal create, update, and delete operations.                          |
+| `src/services/ordersService.js`         | Checkout, weekly order creation, snapshots, and delivery generation. |
+| `src/services/deliveriesService.js`     | Admin/customer daily delivery queries and status updates.            |
+| `src/services/profilesService.js`       | Customer profile and admin profile access.                           |
+| `src/services/deliveryStatusService.js` | Demo delivery status projection.                                     |
